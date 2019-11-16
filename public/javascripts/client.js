@@ -36,7 +36,8 @@ function getSongSelectedIndex() {
 }
 
 function getSongPlaying() {
-    return playList[state.currentlyplaying];
+    // remove dir/ from front of still...playlist array includes mp3 a,b,c,d.. dirs
+    return playList[state.currentlyplaying].replace(/^\/[a-z]\//gmi, "");
 }
 
 function setupProgressBar() {
@@ -49,7 +50,7 @@ function setupProgressBar() {
             $("#timeremaining").text('-' + state.timeremaining.toString().toMMSS());
 
             if ((state.timeremaining / state.duration) > 0)
-            	 margin = 140 - (state.timeremaining / state.duration) * 375;
+                margin = 140 - (state.timeremaining / state.duration) * 375;
 
             $("#progressbar").css("left", margin);
         } // if (!state.paused) {
@@ -75,7 +76,7 @@ function setupVolumeSlider() {
         else
             state.volume--;
 
-        	$.get("setvolume/" + state.volume);
+        $.get("setvolume/" + state.volume);
     }) // $("#winamp,#volume,#timeremaining,#pause,#prev,#next,#shuffle").on("wheel", function(_event) {
 } // function setupVolumeSlider() {
 
@@ -84,12 +85,12 @@ function setupClickListeners() {
         $.get((this).id)
     });
 
- $("#queuesong,#playsong").click(function() {
-        $.get((this).id + "/" + getSongSelectedIndex())
+    $("#queuesong,#playsong").click(function() {
+        $.get((this).id + "/" + getSongSelectedIndex());
     });
 
     $("#playlist").click(function() {
-        $("#mp3search").val(playList[getSongSelectedIndex()]);
+        $("#mp3search").val(playList[getSongSelectedIndex()].replace(/^\/[a-z]\//gmi, ""));
     })
 } // function setupClickListeners() {
 
@@ -182,7 +183,7 @@ function setupWebsocket() {
         console.log("state received from server");
         console.dir(state);
 
-        if (state.hasOwnProperty('playlist')) {
+        if (state.playlist.length > 0) {
             playList = state.playlist;
             setupSearchTextBox();
 
@@ -190,7 +191,8 @@ function setupWebsocket() {
                 var option = document.createElement("option");
 
                 option.setAttribute("id", i);
-                option.text = playList[i];
+                //                option.text = playList[i];
+                option.text = playList[i].replace(/^\/[a-z]\//gmi, "");
                 select.add(option);
 
                 //$("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
@@ -242,11 +244,11 @@ function setupSearchTextBox() {
 
     $("#mp3search").focusin(function() {
         $("#mp3search").css("border", "2px solid #5f5");
-        $("#mp3search").val("");       
-       $("body").unbind("keydown");
+        $("body").unbind("keydown");
+        $("#mp3search").val("");
 
         $("#mp3search").keydown(function(_event) {
-            if (_event.which == 13) 
+            if (_event.which == 13)
                 $.get("playsong/" + getSongSelectedIndex());
         });
     }); // $("#mp3search").focusin(function(){
@@ -262,13 +264,16 @@ function setupSearchTextBox() {
         input: document.getElementById('mp3search'),
         minLength: 2,
         onSelect: function(item, inputfield) {
-            inputfield.value = item.label;
+//            inputfield.value = item.label;
+            console.log("onselect ****")
+            $("#mp3search").val(item.label.replace(/^\/[a-z]\//gmi, ""));
+
         },
 
         fetch: function(text, callback) {
             var match = text.toLowerCase();
             callback(items.filter(function(n) {
-
+                console.log("onfetch ****")
                 if (n.label)
                     return n.label.toLowerCase().indexOf(match) !== -1;
             }));
@@ -278,12 +283,7 @@ function setupSearchTextBox() {
             var itemElement = document.createElement("div");
             itemElement.id = "row";
             itemElement.setAttribute("style", "text-align: left");
-
-            //$("#playlist").find("option:selected").index();	    
-            //$("#queuebutton").click(function() { 
-            //    $("#mp3search").val(playList[$("#playlist").find("option:selected").index()]);
-            //}
-            //$("#mp3search").val($("#playlist").find("option:selected").val()); 
+            console.log("onrender ****")
 
             if (charsAllowed(value)) {
                 var regex = new RegExp(value, 'gi');
@@ -291,7 +291,7 @@ function setupSearchTextBox() {
                     return "<strong>" + _match + "</strong>"
                 });
 
-                itemElement.innerHTML = inner;
+                itemElement.innerHTML = inner.replace(/^\/[a-z]\//gmi, "");
             } else {
                 itemElement.textContent = item.label;
             }

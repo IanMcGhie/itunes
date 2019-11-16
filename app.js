@@ -1,12 +1,17 @@
 "use strict";
 
+// xmms perferences...general plugins...
+// song change plugin...
+// set command to
+// lynx --dump http://winamp:3000/newsong/%f
+
 const pug = require('pug');
 const http = require('http');
 const fs = require("fs");
 const WebSocketServer = require('websocket').server;
 const websocketPort = 6502;
 const playListFile = "/home/ian/monday.pls";
-const playListRootDir = "/home/ian/mp3/"; // <-- dont forget the last backslash
+const playListRootDir = "/home/ian/mp3"; // <-- dont add the final backslash
 const {
     execFile,
     execFileSync,
@@ -18,17 +23,17 @@ var app = express();
 var playList = [];
 var clientList = [];
 var state = {
-	playlist: []
+    playlist: []
 };
 
 function getSongIndex(_songname) {
-    // !!! xmms title preferences must look like this
-    // %p - %t\n%f so we can split on the \n and get the path
-    // then remove the final cr at the end of the string
+    for (var i = 0; i < playList.length; i++)
+        if (_songname == playList[i])
+            return i;
 
-	//return playList.findIndex(_songname.split("\\n")[1].replace("\n", ""));
-	return playList.findIndex(_songname);
-} // function getIndex(_songname) {
+    console.log("ERROR - could not find index for -> " + _songname);
+    return false;
+}
 
 function setupExpress() {
     var path = require('path');
@@ -66,8 +71,9 @@ function setupExpress() {
     });
 
     // xmms new song playing
-    app.get('/newsong/:index', function(_request, _response, _next) {
-        state.currentlyplaying = _request.params.index - 1;
+    app.get('/newsong/*', function(_request, _response, _next) {
+        var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
+        state.currentlyplaying = getSongIndex(songname);
         _next();
     });
 
@@ -76,7 +82,8 @@ function setupExpress() {
             case "/next":
             case "/prev":
                 execFile('qxmms', [_request.url.split(/\//)[1]]);
-                break;
+                _response.end();
+                return;
 
             case "/pause":
                 state.paused = !state.paused;
@@ -97,16 +104,19 @@ function setupExpress() {
             title: playList[state.currentlyplaying]
         });
 
-        console.log("sending state to clients");
+        console.log("request url -> " + _request.url);
 
         state.duration = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
+        /*
+                // this is a queued song...it is at the end of the playlist
+                if (state.currentlyplaying > playList.length - 1) {
 
-        // this is a queued song...it is at the end of the playlist
-        if (state.currentlyplaying > playList.length - 1) {
-            state.currentlyplaying = getSongIndex(execFileSync("qxmms"));
-           }
+        console.log("looking for " + execFileSync("qxmms") + " in playlist...")
 
+
+                   }
+        */
         console.dir(state);
 
         for (var i = 0; i < clientList.length; i++) {
@@ -115,7 +125,6 @@ function setupExpress() {
         } // for (var i = 0;i < clientList.length;i++) {
 
         delete state.queuesong;
-        delete state.playList;
 
         _response.end();
     });
@@ -154,8 +163,8 @@ function setupWebsocket() {
             // a new playlist may be loaded in xmms while the server is active
             getPlaylist();
 
-           connection.sendUTF(JSON.stringify(state));
-           delete state.playList;
+            connection.sendUTF(JSON.stringify(state));
+            state.playlist = [];
         }
 
         connection.on('close', function(_connection) {
@@ -183,7 +192,7 @@ function getPlaylist() {
     playList.length--; // the last line is a cr
 
     playList.forEach(function(_entry, _index) {
-   		playList[_index] = playList[_index].split(playListRootDir)[1];
+        playList[_index] = playList[_index].split(playListRootDir)[1];
         state.playlist[_index] = playList[_index].replace(/^[a-z]\/|.mp3$/gmi, "");
     });
 
