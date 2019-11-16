@@ -108,15 +108,6 @@ function setupExpress() {
 
         state.duration = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
-        /*
-                // this is a queued song...it is at the end of the playlist
-                if (state.currentlyplaying > playList.length - 1) {
-
-        console.log("looking for " + execFileSync("qxmms") + " in playlist...")
-
-
-                   }
-        */
         console.dir(state);
 
         for (var i = 0; i < clientList.length; i++) {
