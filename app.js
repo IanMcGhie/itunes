@@ -1,10 +1,8 @@
 "use strict";
-
 // xmms perferences...general plugins...
 // song change plugin...
 // set command to
 // lynx --dump http://winamp:3000/newsong/%f
-
 const pug = require('pug');
 const http = require('http');
 const fs = require("fs");
@@ -50,17 +48,16 @@ function setupExpress() {
     app.set('view engine', 'pug');
 
     app.get('/setvolume/:level', function(_request, _response, _next) {
-        state.volume = parseInt(_request.params.level);
+        state.volume = _request.params.level;
         execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
         _next();
     });
 
     app.get('/queuesong/:index', function(_request, _response, _next) {
         var queuesong = playListRootDir + playList[parseInt(_request.params.index)];
-        console.log("queueing song -> " + queuesong);
         // this adds it to the bottom of the playList & queues it
-        execFile("xmms", ['-Q', queuesong]);
-        state.queuesong = parseInt(_request.params.index);
+        execFile("xmms", ['-Q', parseInt(queuesong)]);
+        state.queuesong = _request.params.index;
         _next();
     });
 
@@ -83,7 +80,7 @@ function setupExpress() {
             case "/prev":
                 execFile('qxmms', [_request.url.split(/\//)[1]]);
                 _response.end();
-                return;
+                return; // we return because a new song will play & a new msg from xmms will arrive
 
             case "/pause":
                 state.paused = !state.paused;
@@ -106,12 +103,15 @@ function setupExpress() {
 
         console.log("request url -> " + _request.url);
 
-        state.duration = parseInt(execFileSync('qxmms', ['-lS']));
+        state.currentlyplaying = parseInt(state.currentlyplaying);
+        state.volume        = parseInt(state.volume);
+        state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
+
         console.dir(state);
 
         for (var i = 0; i < clientList.length; i++) {
-            console.log("State sent to -> " + clientList[i].remoteAddress);
+            console.log("Sending state to -> " + clientList[i].remoteAddress);
             clientList[i].sendUTF(JSON.stringify(state));
         } // for (var i = 0;i < clientList.length;i++) {
 
@@ -120,6 +120,39 @@ function setupExpress() {
         _response.end();
     });
 }
+
+function handleRequest(_request) {
+    var connection = _request.accept("json", _request.origin);
+    var addToArray = true;
+
+    // Accept the request and get a connection.
+    console.log("\nWebSocket request from " + _request.remoteAddress);
+
+    clientList.forEach(function(_entry, _index) {
+        if (_entry.remoteAddress == _request.remoteAddress)
+            addToArray = false;
+    }); // clientList.forEach(function(_entry,_index) {
+
+    if (addToArray) {
+        console.log("\na new connection from -> " + connection.remoteAddress + " sending playlist");
+        clientList.push(connection);
+        // only send placelist on initial client connection
+        // make sure the most current playlist is loaded
+        // a new playlist may be loaded in xmms while the server is active
+        getPlaylist();
+
+        connection.sendUTF(JSON.stringify(state));
+        state.playlist = [];
+    }
+
+    connection.on('close', function(_connection) {
+        clientList = clientList.filter(function(el, idx, ar) {
+            return el.connected;
+        });
+
+        console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
+    }); //  connection.on('close', function(_connection) {+
+}; // function handleRequest(_request) {
 
 function setupWebsocket() {
     var wsHttp = http.createServer(function(_request, _response) {
@@ -135,38 +168,9 @@ function setupWebsocket() {
     }); // var wsServer = new WebSocketServer({
 
     wsServer.on('request', function(_request) {
-        var connection = _request.accept("json", _request.origin);
-        var addToArray = true;
-
-        // Accept the request and get a connection.
-        console.log("\nWebSocket request from " + _request.remoteAddress);
-
-        clientList.forEach(function(_entry, _index) {
-            if (_entry.remoteAddress == _request.remoteAddress)
-                addToArray = false;
-        }); // clientList.forEach(function(_entry,_index) {
-
-        if (addToArray) {
-            console.log("\na new connection from -> " + connection.remoteAddress + " sending playlist");
-            clientList.push(connection);
-            // only send placelist on initial client connection
-            // make sure the most current playlist is loaded
-            // a new playlist may be loaded in xmms while the server is active
-            getPlaylist();
-
-            connection.sendUTF(JSON.stringify(state));
-            state.playlist = [];
-        }
-
-        connection.on('close', function(_connection) {
-            clientList = clientList.filter(function(el, idx, ar) {
-                return el.connected;
-            });
-
-            console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
-        }); //  connection.on('close', function(_connection) {+
-    }); // wsServer.on('request', function(_request) {  
-} // function setupWebsocket () {	
+    handleRequest(_request)
+    });  
+}
 
 function getPlaylist() {
     /* xmms playlist file looks like this
@@ -184,7 +188,7 @@ function getPlaylist() {
 
     playList.forEach(function(_entry, _index) {
         playList[_index] = playList[_index].split(playListRootDir)[1];
-        state.playlist[_index] = playList[_index].replace(/^[a-z]\/|.mp3$/gmi, "");
+        state.playlist[_index] = playList[_index];
     });
 
     console.dir(state.playlist);
@@ -195,8 +199,8 @@ setupExpress();
 setupWebsocket();
 
 state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
-state.duration = parseInt(execFileSync('qxmms', ['-lS']));
-state.timeremaining = parseInt(execFileSync('qxmms', ['-nS']));
+state.duration = execFileSync('qxmms', ['-lS']);
+state.timeremaining = execFileSync('qxmms', ['-nS']);
 state.shuffle = true;
 state.volume = 50;
 

@@ -31,13 +31,27 @@ String.prototype.toMMSS = function() {
     return minutes + ":" + seconds; // + hours;
 } // String.prototype.toMMSS = function () {
 
-function getSongSelectedIndex() {
-    return $("#playlist").find("option:selected").index();
+function getSongTitle(_index) { // //.replace(/^[a-z]\/|.mp3$/gmi, "");
+    // remove dir/ from front of still...playlist array includes mp3 a,b,c,d.. dirs
+    // and the .mp3 at the end
+    var result = playList[_index].replace(/^\/[a-z]\//gmi, "");
+    result = result.replace(/\.mp3$/gmi, "");
+    return result;
 }
 
-function getSongPlaying() {
-    // remove dir/ from front of still...playlist array includes mp3 a,b,c,d.. dirs
-    return playList[state.currentlyplaying].replace(/^\/[a-z]\//gmi, "");
+function getSongIndex(_song) {
+    for (var i=0; i < playList.length; i++) 
+        if (getSongTitle(i) == _song)
+            return i;
+}
+
+// return index of song in mp3search textbox
+function getSongSelectedIndex() {
+    return getSongIndex($("#mp3search").val());
+}
+
+function getVolume() {
+    return parseInt($("#volume").slider("value"))
 }
 
 function setupProgressBar() {
@@ -66,8 +80,8 @@ function setupVolumeSlider() {
     });
 
     $("#volume").on("slidechange", function(_event, _ui) {
-        if ($("#volume").slider("value") != state.volume)
-            $.get("setvolume/" + parseInt($("#volume").slider("value")));
+        if (getVolume() != state.volume)
+            $.get("setvolume/" + getVolume());
     }); // $("#volume").on("slidechange", function( _event, _ui )  {
 
     $("#winamp,#timeremaining,#pause,#prev,#next,#shuffle").on("wheel", function(_event) {
@@ -86,49 +100,55 @@ function setupClickListeners() {
     });
 
     $("#queuesong,#playsong").click(function() {
-        $.get((this).id + "/" + getSongSelectedIndex());
+         $.get((this).id + "/" + getSongIndex($("#mp3search").val()));
     });
 
     $("#playlist").click(function() {
-        $("#mp3search").val(playList[getSongSelectedIndex()].replace(/^\/[a-z]\//gmi, ""));
-    })
+        $("#mp3search").val($("#playlist").find("option:selected").val());
+    });
+    
 } // function setupClickListeners() {
 
 function setupPlayListKeyboardEvents() {
     $("#playlist").focusin(function() {
-        $("body").unbind("keydown");
+        $("body").unbind("keyup");
         $("#playlist").css("border", "2px solid #5f5");
 
-        $("#playlist").keydown(function(_event) {
+        $("#playlist").keyup(function(_event) {
             console.log("key down -> " + _event.which);
 
             switch (_event.which) {
                 case 13:
-                    $.get("playsong/" + getSongSelectedIndex());
+                    $.get("playsong/" + $("#playlist").find("option:selected").index);
                     break;
-
+                
                 case 51: // 3
-                    if (_event.altKey && (getSongSelectedIndex() > 0)) {
+                    if (_event.altKey) {
                         console.log("Hey! alt-3 event captured!");
                         event.preventDefault();
                     }
                     break;
             }; // switch (_event.which) {
-        }); // $("#playlist").keydown(function(_event){
+        }); // $("#playlist").keyup(function(_event){
     }); // $("#playlist").focusin(function() {
 
     $("#playlist").focusout(function() {
-        $("#mp3search,#playlist").unbind("keydown");
+        $("#mp3search,#playlist").unbind("keyup");
         $("#playlist").css("border", "1px solid #0f0");
         setupBodyKeyboardEvents();
     });
 } // function setupPlayListKeyboardEvents(){
 
 function setupBodyKeyboardEvents() {
-    $("body").keydown(function(_event) {
+    $("body").keyup(function(_event) {
         console.log("keyboard event -> " + _event.which)
 
         switch (_event.which) {
+            case 40: // cr down
+            case 38: // cr up
+                $("#mp3search").val(getSongTitle(state.currentlyplaying));
+            break
+
             case 66: // b
                 $.get("next");
                 break;
@@ -165,8 +185,61 @@ function setupBodyKeyboardEvents() {
                 $.get("playsong/" + getSongSelectedIndex());
                 break;
         } // switch (_event.which) {
-    }); // $("body").keydown(function(_event) {
+    }); // $("body").keyup(function(_event) {
 } // function bodyKeyboardEvents(_event) {
+
+function parseJsonPlaylist() {
+    console.log("parsing playlist " + state.playlist.length + " entries");
+
+    playList = state.playlist;
+    setupSearchTextBox();
+
+    // add playlist to select box
+    for (var i = 0; i < playList.length; i++) {
+        var select = document.getElementById("playlist");
+        var option = document.createElement("option");
+
+        option.setAttribute("id", i);
+        option.text = getSongTitle(i);
+        select.add(option);
+
+        $("#" + i).dblclick(function() {
+            $.get("playsong/" + (this).id)
+        });
+    } //   for (var i = 0;i < playList.length; i++) {
+}
+
+function queuePopup() {
+    $("#dialog").css("display", "inline-block");
+    $("#dialog").html(getSongTitle(state.queuesong) + " queued");
+    $("#dialog").hide("drop", {
+        direction: "down"
+    }, 5000);
+}
+
+function parseState(_jsonData) {
+    console.log("state received from server");
+
+    state = JSON.parse(_jsonData);
+
+    if (state.playlist.length > 0) 
+        parseJsonPlaylist();
+    else 
+        console.dir(state); 
+
+    if (state.hasOwnProperty('queuesong'))
+        queuePopup();
+
+    if (state.shuffle)
+        $("#shuffleenabled").css("visibility", "visible");
+    else
+        $("#shuffleenabled").css("visibility", "hidden");
+    
+    $("#volume").slider("value", state.volume);
+    $("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
+    $("#songtitle,#title").text(getSongTitle(state.currentlyplaying));
+    $("#mp3search").val(getSongTitle(state.currentlyplaying));
+}
 
 function setupWebsocket() {
     var serverUrl = "ws://" + document.location.hostname + ":" + websocketPort;
@@ -177,51 +250,8 @@ function setupWebsocket() {
     };
 
     client.onmessage = function(_event) {
-        var select = document.getElementById("playlist");
-        state = JSON.parse(_event.data);
-
-        console.log("state received from server");
-        console.dir(state);
-
-        if (state.playlist.length > 0) {
-            playList = state.playlist;
-            setupSearchTextBox();
-
-            for (var i = 0; i < playList.length; i++) {
-                var option = document.createElement("option");
-
-                option.setAttribute("id", i);
-                //                option.text = playList[i];
-                option.text = playList[i].replace(/^\/[a-z]\//gmi, "");
-                select.add(option);
-
-                //$("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
-
-                $("#" + i).dblclick(function() {
-                    $.get("playsong/" + (this).id)
-                });
-
-            } //   for (var i = 0;i < playList.length; i++) {
-        } // if (state.hasOwnProperty('playlist')) {
-
-        if (state.hasOwnProperty('queuesong')) {
-            $("#dialog").css("display", "inline-block");
-            $("#dialog").html(playList[state.queuesong] + " queued");
-            $("#dialog").hide("drop", {
-                direction: "down"
-            }, 5000);
-        }
-
-        if (state.shuffle)
-            $("#shuffleenabled").css("visibility", "visible");
-        else
-            $("#shuffleenabled").css("visibility", "hidden");
-
-        $("#volume").slider("value", state.volume);
-        $("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
-        $("#songtitle,#title").text(getSongPlaying());
-        $("#mp3search").val(getSongPlaying());
-    }; // client.onmessage = function(_event) {
+        parseState(_event.data);
+    };
 
     client.onclose = function(_event) {
         console.log("onclose()");
@@ -236,37 +266,48 @@ function charsAllowed(_value) {
 
 function setupSearchTextBox() {
     var items = playList.map(function(n) {
+    var result = n.replace(/^\/[a-z]\//gmi, "");
+    result = result.replace(/\.mp3$/gmi, "");
+
         return {
-            label: n,
+            label: result,
             group: "Results"
         }
     });
 
     $("#mp3search").focusin(function() {
         $("#mp3search").css("border", "2px solid #5f5");
-        $("body").unbind("keydown");
+        $("body").unbind("keyup");
         $("#mp3search").val("");
 
-        $("#mp3search").keydown(function(_event) {
-            if (_event.which == 13)
-                $.get("playsong/" + getSongSelectedIndex());
+        $("#mp3search").keyup(function(_event) {
+            switch(_event.which) {
+                case 13:
+                    $.get("playsong/" + getSongSelectedIndex());
+                break;
+
+                case 27: // esc key
+                    $("#mp3search").blur();
+                break;
+            } // switch(_event.which) {
         });
     }); // $("#mp3search").focusin(function(){
 
     $("#mp3search").focusout(function() {
         $("#mp3search").css("border", "1px solid #0f0");
-        $("#mp3search").unbind("keydown");
-        $("#mp3search").val(getSongPlaying());
+        $("#mp3search").unbind("keyup");
+        $("#mp3search").val($("#playlist").val());
         setupBodyKeyboardEvents();
     });
 
     autocomplete({
+        preventSubmit: true,
         input: document.getElementById('mp3search'),
         minLength: 2,
         onSelect: function(item, inputfield) {
 //            inputfield.value = item.label;
             console.log("onselect ****")
-            $("#mp3search").val(item.label.replace(/^\/[a-z]\//gmi, ""));
+            $("#mp3search").val(item.label);
 
         },
 
@@ -291,7 +332,7 @@ function setupSearchTextBox() {
                     return "<strong>" + _match + "</strong>"
                 });
 
-                itemElement.innerHTML = inner.replace(/^\/[a-z]\//gmi, "");
+                itemElement.innerHTML = inner;
             } else {
                 itemElement.textContent = item.label;
             }
