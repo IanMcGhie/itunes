@@ -128,30 +128,15 @@ function handleRequest(_request) {
     // Accept the request and get a connection.
     console.log("\nWebSocket request from " + _request.remoteAddress);
 
-    clientList.forEach(function(_entry, _index) {
-        if (_entry.remoteAddress == _request.remoteAddress)
-            addToArray = false;
-    }); // clientList.forEach(function(_entry,_index) {
+    console.log("\na new connection from -> " + connection.remoteAddress + " sending playlist");
+    clientList.push(connection);
+    // only send placelist on initial client connection
+    // make sure the most current playlist is loaded
+    // a new playlist may be loaded in xmms while the server is active
+    getPlaylist();
 
-    if (addToArray) {
-        console.log("\na new connection from -> " + connection.remoteAddress + " sending playlist");
-        clientList.push(connection);
-        // only send placelist on initial client connection
-        // make sure the most current playlist is loaded
-        // a new playlist may be loaded in xmms while the server is active
-        getPlaylist();
-
-        connection.sendUTF(JSON.stringify(state));
-        state.playlist = [];
-    }
-
-    connection.on('close', function(_connection) {
-        clientList = clientList.filter(function(el, idx, ar) {
-            return el.connected;
-        });
-
-        console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
-    }); //  connection.on('close', function(_connection) {+
+    connection.sendUTF(JSON.stringify(state));
+    state.playlist = [];
 }; // function handleRequest(_request) {
 
 function setupWebsocket() {
@@ -168,8 +153,16 @@ function setupWebsocket() {
     }); // var wsServer = new WebSocketServer({
 
     wsServer.on('request', function(_request) {
-    handleRequest(_request)
+        handleRequest(_request)
     });  
+
+    wsServer.on('close', function(_connection) {
+        clientList = clientList.filter(function(el, idx, ar) {
+            return el.connected;
+        });
+
+    console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
+    }); //  connection.on('close', function(_connection) {+
 }
 
 function getPlaylist() {

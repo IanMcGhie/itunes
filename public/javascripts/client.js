@@ -106,7 +106,6 @@ function setupClickListeners() {
     $("#playlist").click(function() {
         $("#mp3search").val($("#playlist").find("option:selected").val());
     });
-    
 } // function setupClickListeners() {
 
 function setupPlayListKeyboardEvents() {
@@ -151,39 +150,39 @@ function setupBodyKeyboardEvents() {
 
             case 66: // b
                 $.get("next");
-                break;
+            break;
 
             case 79: // o
                 $.get("setvolume/" + (state.volume + 1));
-                break;
+            break;
 
             case 73: // i
                 $.get("setvolume/" + (state.volume - 1));
-                break;
+            break;
 
             case 74: // j
                 $("#mp3search").focus();
-                break;
+            break;
 
             case 67: // c
                 $.get("pause");
-                break;
+            break;
 
             case 90: // z
                 $.get("prev");
-                break;
+            break;
 
             case 83: // s
                 $.get("shuffle");
-                break;
+            break;
 
             case 81: // q
                 $.get("queuesong/" + getSongSelectedIndex());
-                break;
+            break;
 
             case 13:
                 $.get("playsong/" + getSongSelectedIndex());
-                break;
+            break;
         } // switch (_event.which) {
     }); // $("body").keyup(function(_event) {
 } // function bodyKeyboardEvents(_event) {
@@ -217,6 +216,13 @@ function queuePopup() {
     }, 5000);
 }
 
+function updateGui() {
+    $("#volume").slider("value", state.volume);
+    $("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
+    $("#songtitle,#title").text(getSongTitle(state.currentlyplaying));
+    $("#mp3search").val(getSongTitle(state.currentlyplaying));
+}
+
 function parseState(_jsonData) {
     console.log("state received from server");
 
@@ -235,27 +241,16 @@ function parseState(_jsonData) {
     else
         $("#shuffleenabled").css("visibility", "hidden");
     
-    $("#volume").slider("value", state.volume);
-    $("#playlist>option:eq(" + state.currentlyplaying + ")").prop('selected', true);
-    $("#songtitle,#title").text(getSongTitle(state.currentlyplaying));
-    $("#mp3search").val(getSongTitle(state.currentlyplaying));
+    updateGui();
 }
 
 function setupWebsocket() {
-    var serverUrl = "ws://" + document.location.hostname + ":" + websocketPort;
-    var client = new WebSocket(serverUrl, "json");
+    var serverUrl   = "ws://" + document.location.hostname + ":" + websocketPort;
+    var client      = new WebSocket(serverUrl, "json");
 
-    client.onopen = function(_event) {
-        console.log("onopen()");
-    };
-
-    client.onmessage = function(_event) {
-        parseState(_event.data);
-    };
-
-    client.onclose = function(_event) {
-        console.log("onclose()");
-    };
+    client.onopen   = (_event) => console.log("onopen()");
+    client.onmessage= (_event) => parseState(_event.data);
+    client.onclose  = (_event) => console.log("onclose()");
 } // function setupWebsocket() {
 
 function charsAllowed(_value) {
@@ -265,16 +260,11 @@ function charsAllowed(_value) {
 }
 
 function setupSearchTextBox() {
-    var items = playList.map(function(n) {
-    var result = n.replace(/^\/[a-z]\//gmi, "");
-    result = result.replace(/\.mp3$/gmi, "");
+    setupSearchKeyboardEvents();
+    setupSearchAutoComplete();
+}
 
-        return {
-            label: result,
-            group: "Results"
-        }
-    });
-
+function setupSearchKeyboardEvents() {
     $("#mp3search").focusin(function() {
         $("#mp3search").css("border", "2px solid #5f5");
         $("body").unbind("keyup");
@@ -299,42 +289,53 @@ function setupSearchTextBox() {
         $("#mp3search").val($("#playlist").val());
         setupBodyKeyboardEvents();
     });
+}
 
+function setupSearchAutoComplete() {
     autocomplete({
         preventSubmit: true,
         input: document.getElementById('mp3search'),
         minLength: 2,
-        onSelect: function(item, inputfield) {
+        onSelect: function(_item, inputfield) {
 //            inputfield.value = item.label;
             console.log("onselect ****")
-            $("#mp3search").val(item.label);
+            $("#mp3search").val(_item.label);
 
         },
 
-        fetch: function(text, callback) {
-            var match = text.toLowerCase();
-            callback(items.filter(function(n) {
+        fetch: function(_text, _callback) {
+            var match = _text.toLowerCase();
+            var items = playList.map(function(_n) {
+            var result = _n.replace(/^\/[a-z]\//gmi, "");
+
+            return {
+                label: result,
+                group: "Results"
+                }
+            });
+    
+            _callback(items.filter(function(n) {
                 console.log("onfetch ****")
                 if (n.label)
                     return n.label.toLowerCase().indexOf(match) !== -1;
             }));
         },
 
-        render: function(item, value) {
+        render: function(_item, _value) {
             var itemElement = document.createElement("div");
             itemElement.id = "row";
             itemElement.setAttribute("style", "text-align: left");
             console.log("onrender ****")
 
-            if (charsAllowed(value)) {
-                var regex = new RegExp(value, 'gi');
-                var inner = item.label.replace(regex, function(_match) {
+            if (charsAllowed(_value)) {
+                var regex = new RegExp(_value, 'gi');
+                var inner = _item.label.replace(regex, function(_match) {
                     return "<strong>" + _match + "</strong>"
                 });
 
                 itemElement.innerHTML = inner;
             } else {
-                itemElement.textContent = item.label;
+                itemElement.textContent = _item.label;
             }
 
             return itemElement;
@@ -342,7 +343,6 @@ function setupSearchTextBox() {
 
         emptyMsg: "MP3 not found",
         customize: function(_input, _inputRect, _container, _maxHeight) {
-
             if (_maxHeight < 100) {
                 _container.style.top = "";
                 _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
@@ -350,4 +350,4 @@ function setupSearchTextBox() {
             } // if (maxHeight < 100) {
         } // customize: function(input, inputRect, container, maxHeight) {
     }) // autocomplete({
-} // function mp3SearchSetup() {
+} //  setupSearchAutoComplete() {
