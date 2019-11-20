@@ -7,9 +7,9 @@ const pug = require('pug');
 const http = require('http');
 const fs = require("fs");
 const WebSocketServer = require('websocket').server;
-const websocketPort = 6502;
+const wsPort = 6502;
 const playListFile = "/home/ian/monday.pls";
-const playListRootDir = "/home/ian/mp3"; // <-- dont add the final backslash
+const playListRootDir = "/home/ian/mp3"; 
 const {
     execFile,
     execFileSync,
@@ -21,17 +21,19 @@ var app = express();
 var playList = [];
 var clientList = [];
 var state = {
-    playlist: []
+    playlist: [],
+    shuffle: true,
+    volume: 50,
+    queuesong: -1
 };
 
-function getSongIndex(_songname) {
-    for (var i = 0; i < playList.length; i++)
-        if (_songname == playList[i])
-            return i;
+execFile('xmms', ['-Son']); // turn shuffle on
 
-    console.log("ERROR - could not find index for -> " + _songname);
-    return false;
-}
+setupExpress();
+setupWebsocket();
+
+console.log("initial state");
+console.dir(state);
 
 function setupExpress() {
     var path = require('path');
@@ -47,34 +49,34 @@ function setupExpress() {
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'pug');
 
-    app.get('/setvolume/:level', function(_request, _response, _next) {
-        state.volume = _request.params.level;
+    app.get('/setvolume/:level', (_request, _response, _next) => {
+        state.volume =  parseInt(_request.params.level);
         execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
         _next();
     });
 
-    app.get('/queuesong/:index', function(_request, _response, _next) {
+    app.get('/queuesong/:index', (_request, _response, _next) => {
         var queuesong = playListRootDir + playList[parseInt(_request.params.index)];
         // this adds it to the bottom of the playList & queues it
-        execFile("xmms", ['-Q', parseInt(queuesong)]);
-        state.queuesong = _request.params.index;
+        execFile("xmms", ['-Q', queuesong]);
+        state.queuesong = parseInt(_request.params.index);
         _next();
     });
 
-    app.get('/playsong/:index', function(_request, _response, _next) {
+    app.get('/playsong/:index', (_request, _response, _next) => {
         execFile("qxmms", ['jump', parseInt(_request.params.index) + 1]);
         state.currentlyplaying = _request.params.index;
         _next();
     });
 
     // xmms new song playing
-    app.get('/newsong/*', function(_request, _response, _next) {
+    app.get('/newsong/*', (_request, _response, _next) => {
         var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
         state.currentlyplaying = getSongIndex(songname);
         _next();
     });
 
-    app.get(/[(\/prev\/next\/pause\/shuffle)]/, function(_request, _response, _next) {
+    app.get(/[(\/prev\/next\/pause\/shuffle)]/, (_request, _response, _next) => {
         switch (_request.url) {
             case "/next":
             case "/prev":
@@ -96,15 +98,14 @@ function setupExpress() {
     });
 
     // send state to clients
-    app.get('*', function(_request, _response) {
+    app.get('*', (_request, _response) => {
         _response.render('index', {
             title: playList[state.currentlyplaying]
         });
 
         console.log("request url -> " + _request.url);
 
-        state.currentlyplaying = parseInt(state.currentlyplaying);
-        state.volume        = parseInt(state.volume);
+        state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
 
@@ -115,7 +116,7 @@ function setupExpress() {
             clientList[i].sendUTF(JSON.stringify(state));
         } // for (var i = 0;i < clientList.length;i++) {
 
-        delete state.queuesong;
+        state.queuesong = -1;
 
         _response.end();
     });
@@ -123,12 +124,10 @@ function setupExpress() {
 
 function handleRequest(_request) {
     var connection = _request.accept("json", _request.origin);
-    var addToArray = true;
 
     // Accept the request and get a connection.
-    console.log("\nWebSocket request from " + _request.remoteAddress);
+    console.log("new connection from -> " + connection.remoteAddress + " sending playlist");
 
-    console.log("\na new connection from -> " + connection.remoteAddress + " sending playlist");
     clientList.push(connection);
     // only send placelist on initial client connection
     // make sure the most current playlist is loaded
@@ -140,29 +139,35 @@ function handleRequest(_request) {
 }; // function handleRequest(_request) {
 
 function setupWebsocket() {
-    var wsHttp = http.createServer(function(_request, _response) {
+    var wsHttp = http.createServer((_request, _response) => {
         console.log((new Date()) + ' Received request for ' + _request.url);
 
         _response.writeHead(404);
         _response.end();
-    }).listen(websocketPort);
+    }).listen(wsPort);
 
     var wsServer = new WebSocketServer({
         httpServer: wsHttp,
         autoAcceptConnections: false
-    }); // var wsServer = new WebSocketServer({
+    }); // var wsServer = new wsServer({
 
-    wsServer.on('request', function(_request) {
-        handleRequest(_request)
-    });  
+    wsServer.on('request', (_request) => handleRequest(_request));
 
-    wsServer.on('close', function(_connection) {
+    wsServer.on('close', (_connection) => {
         clientList = clientList.filter(function(el, idx, ar) {
             return el.connected;
         });
 
     console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
     }); //  connection.on('close', function(_connection) {+
+}
+
+function getSongIndex(_songname) {
+    for (var i = 0; i < playList.length; i++)
+        if (_songname == playList[i])
+            return i;
+
+    console.log("ERROR - could not find index for -> " + _songname);
 }
 
 function getPlaylist() {
@@ -175,32 +180,14 @@ function getPlaylist() {
     */
     playList = fs.readFileSync(playListFile, "utf8").split("\n");
 
-    playList.shift();
-    playList.shift();
+    playList.shift(); // removes [playlist] 
+    playList.shift(); // removes NumberOfEntries=5297 
     playList.length--; // the last line is a cr
 
-    playList.forEach(function(_entry, _index) {
+    playList.forEach((_entry, _index) => {
         playList[_index] = playList[_index].split(playListRootDir)[1];
         state.playlist[_index] = playList[_index];
     });
-
-    console.dir(state.playlist);
 } // function getPlaylist() {
-
-getPlaylist();
-setupExpress();
-setupWebsocket();
-
-state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
-state.duration = execFileSync('qxmms', ['-lS']);
-state.timeremaining = execFileSync('qxmms', ['-nS']);
-state.shuffle = true;
-state.volume = 50;
-
-execFile('xmms', ['-Son']); // turn shuffle on
-execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
-
-console.log("initial state");
-console.dir(state);
 
 module.exports = app;
