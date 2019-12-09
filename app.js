@@ -20,6 +20,7 @@ var express = require('express');
 var app = express();
 var playList = [];
 var clientList = [];
+
 var state = {
     playlist: [],
     shuffle: true,
@@ -27,13 +28,13 @@ var state = {
     queuesong: -1
 };
 
+console.log("initial state");
+console.dir(state);
+
 execFile('xmms', ['-Son']); // turn shuffle on
 
 setupExpress();
 setupWebsocket();
-
-console.log("initial state");
-console.dir(state);
 
 function setupExpress() {
     var path = require('path');
@@ -65,45 +66,47 @@ function setupExpress() {
 
     app.get('/playsong/:index', (_request, _response, _next) => {
         execFile("qxmms", ['jump', parseInt(_request.params.index) + 1]);
-        state.currentlyplaying = _request.params.index;
+        
         _next();
     });
 
-    // xmms new song playing
+    app.get('/next|/prev|/pause|/shuffle', (_request, _response, _next) => {
+        var command = _request.url.replace('/','');
+
+        console.log('command -> ' + command)
+
+        switch (command) {
+            case "next":
+            case "prev":
+                execFile('qxmms', [command]);
+                state.paused = false;
+            break;
+
+            case "pause":
+                state.paused = !state.paused;
+                execFile('qxmms', ['pause']);
+            break;
+
+            case "shuffle":
+                execFile('xmms', ['-S']);
+                state.shuffle = !state.shuffle;
+            break;
+        } //switch (_request.url) {
+
+        _next();
+    });
+
+    // xmms new song playing...this request came from xmms
     app.get('/newsong/*', (_request, _response, _next) => {
         var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
         state.currentlyplaying = getSongIndex(songname);
-        _next();
-    });
-
-    app.get(/[(\/prev\/next\/pause\/shuffle)]/, (_request, _response, _next) => {
-        switch (_request.url) {
-            case "/next":
-            case "/prev":
-                execFile('qxmms', [_request.url.split(/\//)[1]]);
-                _response.end();
-                return; // we return because a new song will play & a new msg from xmms will arrive
-
-            case "/pause":
-                state.paused = !state.paused;
-                execFile('qxmms', ['pause']);
-                break;
-
-            case "/shuffle":
-                execFile('xmms', ['-S']);
-                state.shuffle = !state.shuffle;
-                break;
-        } //switch (_request.url) {
+        
         _next();
     });
 
     // send state to clients
     app.get('*', (_request, _response) => {
-        _response.render('index', {
-            title: playList[state.currentlyplaying]
-        });
-
-        console.log("request url -> " + _request.url);
+        console.log("\nincoming url -> " + _request.url);
 
         state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
@@ -111,27 +114,35 @@ function setupExpress() {
 
         console.dir(state);
 
+        _response.render('index', {
+            title: playList[state.currentlyplaying]
+        });
+
         for (var i = 0; i < clientList.length; i++) {
-            console.log("Sending state to -> " + clientList[i].remoteAddress);
-            clientList[i].sendUTF(JSON.stringify(state));
+            // dont send new volume level back to client that 
+            // changed it....creates an infinite loop
+            if ((clientList[i] != _request.remoteAddress) && (_request.url.split('/')[1] != 'setvolume')) {
+                console.log("Sending state to -> " + clientList[i].remoteAddress);
+
+               clientList[i].sendUTF(JSON.stringify(state));
+            }
         } // for (var i = 0;i < clientList.length;i++) {
 
+        // reset one shot
         state.queuesong = -1;
 
         _response.end();
     });
-}
+} // function setupExpress() {
 
 function handleRequest(_request) {
     var connection = _request.accept("json", _request.origin);
 
-    // Accept the request and get a connection.
     console.log("new connection from -> " + connection.remoteAddress + " sending playlist");
 
     clientList.push(connection);
-    // only send placelist on initial client connection
+    // only send playlist on initial client connection
     // make sure the most current playlist is loaded
-    // a new playlist may be loaded in xmms while the server is active
     getPlaylist();
 
     connection.sendUTF(JSON.stringify(state));
@@ -160,7 +171,7 @@ function setupWebsocket() {
 
     console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
     }); //  connection.on('close', function(_connection) {+
-}
+} // function setupWebsocket() {
 
 function getSongIndex(_songname) {
     for (var i = 0; i < playList.length; i++)
