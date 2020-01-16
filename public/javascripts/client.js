@@ -4,10 +4,12 @@ var playList = [];
 var websocketPort = 6502;
 var searchDropdownVisible = true;
 var isFirefox;
+var isChrome;
 
 $(document).ready(function() {
     isFirefox = typeof InstallTrigger !== 'undefined';
-  
+    isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+
     setupTimer();
     setupKBEvents();
     setupClickListeners();
@@ -15,10 +17,10 @@ $(document).ready(function() {
     setupPlayListKBEvents();
     setupVolumeControl();
 
-    if (!isFirefox)
-        getBBState();
+    if (!isFirefox && !isChrome)
+        getBBState(); // my blackberry curve foan
             else
-                setupWebsocket();            
+                setupWebsocket();
 }); // $(document).ready(() => {
 
 String.prototype.toMMSS = function() {
@@ -94,7 +96,7 @@ function setupVolumeControl() {
         animate: false,
         min: 0,
         max: 100,
-        value: state.volume
+        value: 0
     });
 
     $("#volume").on("slidechange", function(_event, _ui) {

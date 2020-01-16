@@ -54,9 +54,8 @@ function setupExpress() {
     app.get('/setvolume/:level', (_request,_response , _next) => {
         state.volume =  parseInt(_request.params.level);
         execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
-        console.log("set volume");
-        console.dir(_next);
-        //sendState(_request);
+
+        sendState(_request.ip);
         _next();
     });
 
@@ -141,7 +140,7 @@ function setupExpress() {
     console.log("express setup")
 } // function setupExpress() {
 
-function sendState(_requestFrom) {
+function sendState(_dontSendTo) {
     console.log("current state")
     
     state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
@@ -149,16 +148,12 @@ function sendState(_requestFrom) {
     state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
 
     console.dir(state)
-    for (var i = 0; i < clientList.length; i++) {
-        console.log("Sending state to -> " + clientList[i].remoteAddress);
-console.log("and");
-console.dir(_requestFrom);
-
-        if (clientList[i].remoteAddress != _requestFrom)
+    for (var i = 0; i < clientList.length; i++) 
+        if (clientList[i].remoteAddress != _dontSendTo) {
+            console.log("Sending state to -> " + clientList[i].remoteAddress);
             clientList[i].sendUTF(JSON.stringify(state));
-            else
-                console.log("not sending to " + _requestFrom);
-    } // for (var i = 0; i < clientList.length; i++) {
+            } else
+                console.log("not sending state to -> " + _dontSendTo);
     
     state.queueSong = -1;
 }

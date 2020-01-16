@@ -12,8 +12,8 @@ websocket setup
 incoming url -> /
 new connection from -> ::ffff:192.168.50.223
 current state
-{ timeremaining: 495,
-  duration: 580,
+{ timeremaining: 596,
+  duration: 942,
   playList:
    [ '/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3',
      '/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain\'t Got A Hold On Me.mp3',
@@ -119,406 +119,1641 @@ current state
   shuffle: true,
   volume: 35,
   queueSong: -1,
-  currentlyplaying: 2719 }
+  currentlyplaying: 2034 }
 Sending state to -> ::ffff:192.168.50.223
-and
-undefined
-set volume
-[Function: next]
-
-incoming url -> /setvolume/34
-colsing connection
-Wed Jan 15 2020 22:46:07 GMT-0600 (Central Standard Time) Peer ::ffff:192.168.50.223 disconnected.
-
-incoming url -> /
-new connection from -> ::ffff:192.168.50.223
-current state
-{ timeremaining: 402,
-  duration: 580,
-  shuffle: true,
-  volume: 34,
-  queueSong: -1,
-  currentlyplaying: 2719,
-  playList:
-   [ '/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain\'t Got A Hold On Me.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/04 - Soul Stripper.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/05 - Baby, Please Don\'t Go.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/1.mp3',
-     '/a/ACDC/AC DC - Back In Black/01 - Hells Bells.mp3',
-     '/a/ACDC/AC DC - Back In Black/02 - Shoot To Thrill.mp3',
-     '/a/ACDC/AC DC - Back In Black/03 - What Do You Do For Money Honey.mp3',
-     '/a/ACDC/AC DC - Back In Black/04 - Given The Dog A Bone.mp3',
-     '/a/ACDC/AC DC - Back In Black/05 - Let Me Put My Love Into You.mp3',
-     '/a/ACDC/AC DC - Back In Black/06 - Back In Black.mp3',
-     '/a/ACDC/AC DC - Back In Black/07 - You Shook Me All Night Long.mp3',
-     '/a/ACDC/AC DC - Back In Black/08 - Have A Drink On Me.mp3',
-     '/a/ACDC/AC DC - Back In Black/09 - Shake A Leg.mp3',
-     '/a/ACDC/AC DC - Back In Black/10 - Rock And Roll Ain\'t Noise Pollution.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/01 - Dirty Deeds Done Dirt Cheap.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/02 - Love At First Feel.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/03 - Big Balls.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/04 - Rocker.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/05 - Problem Child.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/06 - There\'s Gonna Be Some Rockin\'.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/07 - Ain\'t No Fun (Waiting Round To Be A Millionaire).mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/08 - Ride On.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/09 - Squealer.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/01 - Rising Power.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/02 - This House Is on Fire.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/03 - Flick of the Switch.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/04 - Nervous Shakedown.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/05 - Landslide.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/06 - Guns for Hire.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/07 - Deep in the Hole.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/08 - Bedlam in Belgium.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/09 - Badlands.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/10 - Brain Shake.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/01 - For Those About To Rock (We Salute You).mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/02 - Put The Finger On You.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/03 - Let\'s Get It Up.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/04 - Inject The Venom.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/05 - Snowballed.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/06 - Evil Walks.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/07 - C.O.D..mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/08 - Breaking The Rules.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/09 - Night Of The Long Knives.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/10 - Spellbound.mp3',
-     '/a/ACDC/AC DC - High Voltage/01 - It\'s A Long Way To The Top (If You Wanna Rock \'n\' Roll).mp3',
-     '/a/ACDC/AC DC - High Voltage/02 - Rock \'n\' Roll Singer.mp3',
-     '/a/ACDC/AC DC - High Voltage/03 - The Jack.mp3',
-     '/a/ACDC/AC DC - High Voltage/04 - Live Wire.mp3',
-     '/a/ACDC/AC DC - High Voltage/05 - T.N.T..mp3',
-     '/a/ACDC/AC DC - High Voltage/06 - Can I Sit Next To You Girl.mp3',
-     '/a/ACDC/AC DC - High Voltage/07 - Little Lover.mp3',
-     '/a/ACDC/AC DC - High Voltage/08 - She\'s Got Balls.mp3',
-     '/a/ACDC/AC DC - High Voltage/09 - High Voltage.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/01 - Highway to Hell.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/02 - Girls got Rhythm.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/03 - Walk all over You.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/04 - Touch Too Much.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/05 - Beating around the Bush.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/06 - Shot down in Flames.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/07 - Get it Hot.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/08 - If you want Blood (You\'ve Got It).mp3',
-     '/a/ACDC/AC DC - Highway To Hell/09 - Love Hungry Man.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/10 - Night Prowler.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/01 - Go Down.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/02 - Dog Eat Dog.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/03 - Let There Be Rock.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/04 - Bad Boy Boogie.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/05 - Problem Child.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/06 - Overdose.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/07 - Hell Ain\'t A Bad Place To Be.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/08 - Whole Lotta Rosie.mp3',
-     '/a/ACDC/AC DC - Powerage/01 - Rock \'N\' Roll Damnation.mp3',
-     '/a/ACDC/AC DC - Powerage/02 - Down Payment Blues.mp3',
-     '/a/ACDC/AC DC - Powerage/03 - Gimme A Bullet.mp3',
-     '/a/ACDC/AC DC - Powerage/04 - Riff Raff.mp3',
-     '/a/ACDC/AC DC - Powerage/05 - Sin City.mp3',
-     '/a/ACDC/AC DC - Powerage/06 - What\'s Next To The Moon.mp3',
-     '/a/ACDC/AC DC - Powerage/07 - Gone Shootin\'.mp3',
-     '/a/ACDC/AC DC - Powerage/08 - Up To My Neck In You.mp3',
-     '/a/ACDC/AC DC - Powerage/09 - Kicked In The Teeth.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/13  The Lonely Bull (El Solo Toro)+.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/14  El Lobo (The Wolf)+.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/15  Tijuana Sauerkraut +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/16  Desafinado +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/17  Mexico +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/18  Never on Sunday +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/19  Struttin\' With Maria +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/20  Let It Be Me +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/21  Acapulco 1922 +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/22  Limbo Rock +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/23  Crawfish +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/24  Quiet Tear (Lagrima Quieta)+.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/01. A Taste Of Honey.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/02. Green Peppers.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/03. Tangerine.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/04. Bittersweet Samba.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/05. Lemon Tree.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/06. Whipped Cream.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/07. Love Potion No. 9.mp3',
-     ... 4577 more items ] }
-Sending state to -> ::ffff:192.168.50.223
-and
-undefined
+_dontSendTo is -> undefined
 
 incoming url -> /next
-new song -> /m/Montgomery, Wes/The Complete Riverside Recordings (Disc 7) - Wes Montgomery - 08 - Lois Ann.mp3 index -> 2690
+new song -> /e/Evans, Bill/Getting Sentimental/1-09 Theme from M_A_S_H (Suicide Is.mp3 index -> 1494
 current state
-{ timeremaining: 191,
-  duration: 191,
+{ timeremaining: 292,
+  duration: 292,
   shuffle: true,
-  volume: 34,
+  volume: 35,
   queueSong: -1,
-  currentlyplaying: 2690,
+  currentlyplaying: 1494,
   paused: false }
 Sending state to -> ::ffff:192.168.50.223
-and
-undefined
+_dontSendTo is -> undefined
 
-incoming url -> /newsong////home/ian/mp3/m/Montgomery,%20Wes/The%20Complete%20Riverside%20Recordings%20(Disc%207)%20-%20Wes%20Montgomery%20-%2008%20-%20Lois%20Ann.mp3
+incoming url -> /newsong////home/ian/mp3/e/Evans,%20Bill/Getting%20Sentimental/1-09%20Theme%20from%20M_A_S_H%20(Suicide%20Is.mp3
 
-incoming url -> /
-get bbstate() playlist entries -> 4677
-{ timeremaining: 137,
-  duration: 191,
-  shuffle: true,
-  volume: 34,
-  queueSong: -1,
-  currentlyplaying: 2690,
-  paused: false,
-  playList:
-   [ '/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain\'t Got A Hold On Me.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/04 - Soul Stripper.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/05 - Baby, Please Don\'t Go.mp3',
-     '/a/ACDC/AC DC - 74 Jailbreak/1.mp3',
-     '/a/ACDC/AC DC - Back In Black/01 - Hells Bells.mp3',
-     '/a/ACDC/AC DC - Back In Black/02 - Shoot To Thrill.mp3',
-     '/a/ACDC/AC DC - Back In Black/03 - What Do You Do For Money Honey.mp3',
-     '/a/ACDC/AC DC - Back In Black/04 - Given The Dog A Bone.mp3',
-     '/a/ACDC/AC DC - Back In Black/05 - Let Me Put My Love Into You.mp3',
-     '/a/ACDC/AC DC - Back In Black/06 - Back In Black.mp3',
-     '/a/ACDC/AC DC - Back In Black/07 - You Shook Me All Night Long.mp3',
-     '/a/ACDC/AC DC - Back In Black/08 - Have A Drink On Me.mp3',
-     '/a/ACDC/AC DC - Back In Black/09 - Shake A Leg.mp3',
-     '/a/ACDC/AC DC - Back In Black/10 - Rock And Roll Ain\'t Noise Pollution.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/01 - Dirty Deeds Done Dirt Cheap.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/02 - Love At First Feel.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/03 - Big Balls.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/04 - Rocker.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/05 - Problem Child.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/06 - There\'s Gonna Be Some Rockin\'.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/07 - Ain\'t No Fun (Waiting Round To Be A Millionaire).mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/08 - Ride On.mp3',
-     '/a/ACDC/AC DC - Dirty Deeds Done Dirt Cheap/09 - Squealer.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/01 - Rising Power.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/02 - This House Is on Fire.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/03 - Flick of the Switch.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/04 - Nervous Shakedown.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/05 - Landslide.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/06 - Guns for Hire.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/07 - Deep in the Hole.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/08 - Bedlam in Belgium.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/09 - Badlands.mp3',
-     '/a/ACDC/AC DC - Flick of the Switch/10 - Brain Shake.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/01 - For Those About To Rock (We Salute You).mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/02 - Put The Finger On You.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/03 - Let\'s Get It Up.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/04 - Inject The Venom.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/05 - Snowballed.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/06 - Evil Walks.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/07 - C.O.D..mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/08 - Breaking The Rules.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/09 - Night Of The Long Knives.mp3',
-     '/a/ACDC/AC DC - For Those About To Rock We Salute You/10 - Spellbound.mp3',
-     '/a/ACDC/AC DC - High Voltage/01 - It\'s A Long Way To The Top (If You Wanna Rock \'n\' Roll).mp3',
-     '/a/ACDC/AC DC - High Voltage/02 - Rock \'n\' Roll Singer.mp3',
-     '/a/ACDC/AC DC - High Voltage/03 - The Jack.mp3',
-     '/a/ACDC/AC DC - High Voltage/04 - Live Wire.mp3',
-     '/a/ACDC/AC DC - High Voltage/05 - T.N.T..mp3',
-     '/a/ACDC/AC DC - High Voltage/06 - Can I Sit Next To You Girl.mp3',
-     '/a/ACDC/AC DC - High Voltage/07 - Little Lover.mp3',
-     '/a/ACDC/AC DC - High Voltage/08 - She\'s Got Balls.mp3',
-     '/a/ACDC/AC DC - High Voltage/09 - High Voltage.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/01 - Highway to Hell.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/02 - Girls got Rhythm.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/03 - Walk all over You.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/04 - Touch Too Much.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/05 - Beating around the Bush.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/06 - Shot down in Flames.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/07 - Get it Hot.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/08 - If you want Blood (You\'ve Got It).mp3',
-     '/a/ACDC/AC DC - Highway To Hell/09 - Love Hungry Man.mp3',
-     '/a/ACDC/AC DC - Highway To Hell/10 - Night Prowler.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/01 - Go Down.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/02 - Dog Eat Dog.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/03 - Let There Be Rock.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/04 - Bad Boy Boogie.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/05 - Problem Child.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/06 - Overdose.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/07 - Hell Ain\'t A Bad Place To Be.mp3',
-     '/a/ACDC/AC DC - Let There Be Rock/08 - Whole Lotta Rosie.mp3',
-     '/a/ACDC/AC DC - Powerage/01 - Rock \'N\' Roll Damnation.mp3',
-     '/a/ACDC/AC DC - Powerage/02 - Down Payment Blues.mp3',
-     '/a/ACDC/AC DC - Powerage/03 - Gimme A Bullet.mp3',
-     '/a/ACDC/AC DC - Powerage/04 - Riff Raff.mp3',
-     '/a/ACDC/AC DC - Powerage/05 - Sin City.mp3',
-     '/a/ACDC/AC DC - Powerage/06 - What\'s Next To The Moon.mp3',
-     '/a/ACDC/AC DC - Powerage/07 - Gone Shootin\'.mp3',
-     '/a/ACDC/AC DC - Powerage/08 - Up To My Neck In You.mp3',
-     '/a/ACDC/AC DC - Powerage/09 - Kicked In The Teeth.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/13  The Lonely Bull (El Solo Toro)+.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/14  El Lobo (The Wolf)+.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/15  Tijuana Sauerkraut +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/16  Desafinado +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/17  Mexico +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/18  Never on Sunday +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/19  Struttin\' With Maria +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/20  Let It Be Me +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/21  Acapulco 1922 +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/22  Limbo Rock +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/23  Crawfish +.mp3',
-     '/a/Alpert, Herb/The Lonely Bull/24  Quiet Tear (Lagrima Quieta)+.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/01. A Taste Of Honey.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/02. Green Peppers.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/03. Tangerine.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/04. Bittersweet Samba.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/05. Lemon Tree.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/06. Whipped Cream.mp3',
-     '/a/Alpert, Herb/Whipped Cream & Other Delights/07. Love Potion No. 9.mp3',
-     ... 4577 more items ] }
+incoming url -> /next
+new song -> /q/Queensryche/Queensryche-Operation_Mindcrime-(Retail)-1988-HHI/09-Queensryche-The_Needle_Lies-HHI.mp3 index -> 3222
 current state
-{ timeremaining: 123,
-  duration: 191,
+{ timeremaining: 188,
+  duration: 188,
   shuffle: true,
-  volume: 34,
+  volume: 35,
   queueSong: -1,
-  currentlyplaying: 2690,
-  paused: true }
-Sending state to -> ::ffff:192.168.50.223
-and
-undefined
-
-incoming url -> /pause
-current state
-{ timeremaining: 123,
-  duration: 191,
-  shuffle: true,
-  volume: 34,
-  queueSong: -1,
-  currentlyplaying: 2690,
+  currentlyplaying: 3222,
   paused: false }
 Sending state to -> ::ffff:192.168.50.223
-and
-undefined
+_dontSendTo is -> undefined
 
-incoming url -> /pause
-set volume
-[Function: next]
+incoming url -> /newsong////home/ian/mp3/q/Queensryche/Queensryche-Operation_Mindcrime-(Retail)-1988-HHI/09-Queensryche-The_Needle_Lies-HHI.mp3
 
-incoming url -> /setvolume/35
-set volume
-[Function: next]
+incoming url -> /next
+new song -> /b/Brubeck/Dave Brubeck Quartet & Stan Getz - Misty.mp3 index -> 788
+current state
+{ timeremaining: 318,
+  duration: 318,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 788,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/b/Brubeck/Dave%20Brubeck%20Quartet%20&%20Stan%20Getz%20-%20Misty.mp3
+
+incoming url -> /next
+new song -> /m/Montgomery, Wes/The Complete Riverside Recordings (Disc 1) - Wes Montgomery - 11 - Yesterdays.mp3 index -> 2573
+current state
+{ timeremaining: 199,
+  duration: 199,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 2573,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/m/Montgomery,%20Wes/The%20Complete%20Riverside%20Recordings%20(Disc%201)%20-%20Wes%20Montgomery%20-%2011%20-%20Yesterdays.mp3
+
+incoming url -> /next
+new song -> /v/SRV/1989 - In Step/05 - Leave My Girl Alone.mp3 index -> 4231
+current state
+{ timeremaining: 258,
+  duration: 258,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4231,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/v/SRV/1989%20-%20In%20Step/05%20-%20Leave%20My%20Girl%20Alone.mp3
+
+incoming url -> /next
+new song -> /p/Pariliment/Parliament Greatest Hits/03 Parliament - P Funk (Wants To Get Funked Up).mp3 index -> 2827
+current state
+{ timeremaining: 456,
+  duration: 456,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 2827,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/p/Pariliment/Parliament%20Greatest%20Hits/03%20Parliament%20-%20P%20Funk%20(Wants%20To%20Get%20Funked%20Up).mp3
+
+incoming url -> /next
+new song -> /t/Talking Heads/Sand In The Vaseline/disk1/Talking Heads - Burning Down The House.mp3 index -> 4015
+current state
+{ timeremaining: 221,
+  duration: 221,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4015,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/t/Talking%20Heads/Sand%20In%20The%20Vaseline/disk1/Talking%20Heads%20-%20Burning%20Down%20The%20House.mp3
+
+incoming url -> /next
+new song -> /c/CCR/Forever 36 greatest hitsCD1/14 - Night time is the right time.mp3 index -> 826
+current state
+{ timeremaining: 187,
+  duration: 187,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 826,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/c/CCR/Forever%2036%20greatest%20hitsCD1/14%20-%20Night%20time%20is%20the%20right%20time.mp3
+
+incoming url -> /next
+new song -> /t/Telepathic Butterflies/Telepathic Butterflies - House Of Smiles.mp3 index -> 4157
+current state
+{ timeremaining: 386,
+  duration: 386,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> undefined
+
+incoming url -> /newsong////home/ian/mp3/t/Telepathic%20Butterflies/Telepathic%20Butterflies%20-%20House%20Of%20Smiles.mp3
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 374,
+  duration: 386,
+  shuffle: true,
+  volume: 36,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/36
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/35
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 31,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/31
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 34,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/34
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 33,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/33
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 32,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/32
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 350,
+  duration: 386,
+  shuffle: true,
+  volume: 30,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/30
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 29,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/29
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 28,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/28
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 27,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/27
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 26,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/26
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 25,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/25
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 24,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/24
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 25,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/25
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 26,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/26
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 27,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/27
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 28,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/28
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 29,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/29
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 30,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/30
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 31,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/31
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 32,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/32
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 33,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/33
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 349,
+  duration: 386,
+  shuffle: true,
+  volume: 34,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/34
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/35
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 36,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/36
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/37
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/38
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 39,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/39
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 40,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/40
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 41,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/41
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 42,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/42
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 43,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/43
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 44,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/44
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 45,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/45
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 46,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/46
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 47,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/47
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 48,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/48
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 348,
+  duration: 386,
+  shuffle: true,
+  volume: 49,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/49
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 50,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/50
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 51,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/51
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 52,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/52
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 53,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/53
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 54,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/54
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 55,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/55
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 56,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/56
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 57,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/57
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 58,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/58
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 59,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/59
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 60,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/60
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 61,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/61
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 60,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/60
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 59,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/59
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 58,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/58
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 57,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/57
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 347,
+  duration: 386,
+  shuffle: true,
+  volume: 56,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/56
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 55,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/55
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 54,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/54
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 53,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/53
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 52,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/52
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 51,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/51
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 50,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/50
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 49,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/49
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 48,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/48
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 47,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/47
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 46,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/46
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 45,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/45
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 44,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/44
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 43,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/43
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 42,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/42
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 41,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/41
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 346,
+  duration: 386,
+  shuffle: true,
+  volume: 40,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/40
-set volume
-[Function: next]
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 39,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
 incoming url -> /setvolume/39
-
-incoming url -> /next
-new song -> /p/Powell, Cozy/Cozy Powell - Over The Top [smb]/01 - Theme 1.mp3 index -> 3096
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
 current state
-{ timeremaining: 225,
-  duration: 225,
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 40,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/40
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 41,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/41
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 42,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/42
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 43,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/43
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 42,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/42
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 41,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/41
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 40,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/40
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
   shuffle: true,
   volume: 39,
   queueSong: -1,
-  currentlyplaying: 3096,
+  currentlyplaying: 4157,
   paused: false }
 Sending state to -> ::ffff:192.168.50.223
-and
-undefined
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
-incoming url -> /newsong////home/ian/mp3/p/Powell,%20Cozy/Cozy%20Powell%20-%20Over%20The%20Top%20[smb]/01%20-%20Theme%201.mp3
-
-incoming url -> /next
-new song -> /m/Montgomery, Wes/The Complete Riverside Recordings (Disc 11) - Wes Montgomery - 12 - Moanin' (Take 7 - Originally .mp3 index -> 2608
+incoming url -> /setvolume/39
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
 current state
-{ timeremaining: 380,
-  duration: 380,
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/38
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/37
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 36,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/36
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/35
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 345,
+  duration: 386,
+  shuffle: true,
+  volume: 34,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/34
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 35,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/35
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 36,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/36
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/37
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/38
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
   shuffle: true,
   volume: 39,
   queueSong: -1,
-  currentlyplaying: 2608,
+  currentlyplaying: 4157,
   paused: false }
 Sending state to -> ::ffff:192.168.50.223
-and
-undefined
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
 
-incoming url -> /newsong////home/ian/mp3/m/Montgomery,%20Wes/The%20Complete%20Riverside%20Recordings%20(Disc%2011)%20-%20Wes%20Montgomery%20-%2012%20-%20Moanin'%20(Take%207%20-%20Originally%20.mp3
+incoming url -> /setvolume/39
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/38
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/37
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 36,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/36
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/37
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/38
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 39,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/39
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 40,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/40
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 39,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/39
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 38,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/38
+-------------------------------------------- set volume -----------------------------------
+::ffff:192.168.50.223
+current state
+{ timeremaining: 344,
+  duration: 386,
+  shuffle: true,
+  volume: 37,
+  queueSong: -1,
+  currentlyplaying: 4157,
+  paused: false }
+Sending state to -> ::ffff:192.168.50.223
+_dontSendTo is -> ::ffff:192.168.50.223
+not sending to ::ffff:192.168.50.223
+
+incoming url -> /setvolume/37
