@@ -28,7 +28,6 @@ var state = {
     shuffle: true,
     volume: 35,
     queueSong: -1,
-    setVolume: false
 };
 
 execFile('xmms', ['-Son']); // turn shuffle on
@@ -52,11 +51,12 @@ function setupExpress() {
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'pug');
 
-    app.get('/setvolume/:level', (_request, _response, _next) => {
+    app.get('/setvolume/:level', (_request,_response , _next) => {
         state.volume =  parseInt(_request.params.level);
         execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
-        
-        sendState();
+        console.log("set volume");
+        console.dir(_next);
+        //sendState(_request);
         _next();
     });
 
@@ -121,7 +121,6 @@ function setupExpress() {
         state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
 
         console.dir(state)
-           
         _response.send(JSON.stringify(state));
         delete state.playList;
 
@@ -142,7 +141,7 @@ function setupExpress() {
     console.log("express setup")
 } // function setupExpress() {
 
-function sendState() {
+function sendState(_requestFrom) {
     console.log("current state")
     
     state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
@@ -150,27 +149,19 @@ function sendState() {
     state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
 
     console.dir(state)
-
     for (var i = 0; i < clientList.length; i++) {
-        // dont send new volume level back to client that 
         console.log("Sending state to -> " + clientList[i].remoteAddress);
-        clientList[i].sendUTF(JSON.stringify(state));
+console.log("and");
+console.dir(_requestFrom);
 
-        // reset one shot
-        state.queueSong = -1;
+        if (clientList[i].remoteAddress != _requestFrom)
+            clientList[i].sendUTF(JSON.stringify(state));
+            else
+                console.log("not sending to " + _requestFrom);
     } // for (var i = 0; i < clientList.length; i++) {
-
+    
+    state.queueSong = -1;
 }
-
-function handleRequest(_request) {
-    var connection = _request.accept("json", _request.origin);
-
-    console.log("new connection from -> " + _request.remoteAddress)
-    state.playList = playList;
-    clientList.push(connection);
-    sendState();
-    delete state.playList;
-}; // function handleRequest(_request) {
 
 function setupWebsocket() {
     console.log("setting up websocket");
@@ -188,7 +179,13 @@ function setupWebsocket() {
     }); // var wsServer = new wsServer({
 
     wsServer.on('request', (_request) => {
-        handleRequest(_request);
+        var connection = _request.accept("json", _request.origin);
+
+        console.log("new connection from -> " + _request.remoteAddress)
+        state.playList = playList;
+        clientList.push(connection);
+        sendState();
+        delete state.playList;
     });
 
     wsServer.on('close', (_connection) => {

@@ -3,12 +3,11 @@ var state = { setVolume: false};
 var playList = [];
 var websocketPort = 6502;
 var searchDropdownVisible = true;
+var isFirefox;
 
 $(document).ready(function() {
-    var isFirefox = typeof InstallTrigger !== 'undefined';
-
-    
-    
+    isFirefox = typeof InstallTrigger !== 'undefined';
+  
     setupTimer();
     setupKBEvents();
     setupClickListeners();
@@ -92,14 +91,19 @@ function setupTimer() {
 
 function setupVolumeControl() {
     $("#volume").slider({
-        animate: true,
+        animate: false,
         min: 0,
         max: 100,
         value: state.volume
     });
 
     $("#volume").on("slidechange", function(_event, _ui) {
-//      console.log("volume slidechange state.setVolume -> " + Object.keys(state.setVolume))
+        //console.log("volume slidechange state.setVolume -> " + Object.keys(state.setVolume))
+        
+        if (state.volume != $("#volume").slider("value")){
+            //alert("volume -> " + $("#volume").slider("value"));
+            $.get("setvolume/" + $("#volume").slider("value"));
+        }
     }); // $("#volume").on("slidechange", (_event, _ui) => {
 
     $("#player,#prev,#pause,#next").on("wheel", function(_event) {
@@ -115,6 +119,11 @@ function setupVolumeControl() {
 } // function setupVolumeControl() {
  
 function setupClickListeners() {
+    if (!isFirefox) 
+        $("#winamp").click(function() {
+        location.reload();
+    });
+
     $("#pause,#prev,#next,#shuffle").click(function() { 
          $.get((this).id);
      });
@@ -176,11 +185,13 @@ function setupKBEvents() {
             case 79: // o
                 state.volume++;
                 $.get("setvolume/" + state.volume);
+                updateUI();
             break;
 
             case 73: // i
                 state.volume--;
                 $.get("setvolume/" + state.volume);
+                updateUI();
             break;
 
             case 74: // j
@@ -259,6 +270,7 @@ function updateUI() {
     }
 
     $("#mp3search").val(getSongTitle(state.currentlyplaying));
+    $("#volume").slider("value", state.volume);
 
     if (state.shuffle)
         $("#shuffleenabled").css("visibility", "visible");
@@ -305,15 +317,18 @@ function setupWebsocket() {
     var client      = new WebSocket(serverUrl, "json");
 
     client.onopen   = function(_event) { 
-        console.log("onopen()") 
+        console.log("onopen()");
     };
 
     client.onmessage= function(_event) {
+        console.log("onmessage()");
         parseState(_event.data); 
         updateUI();
     }
 
-    client.onclose  = function(_event) { console.log("onclose()"); }
+    client.onclose  = function(_event) { 
+        console.log("onclose()");
+    }
 } 
 
 function charsAllowed(_value) {
