@@ -1,6 +1,5 @@
 @font-face {
     font-family: "Hack-Regular";
-    font-size: 12px;
     src: url("/fonts/Hack-Regular.ttf");
     font-family: "DS-Regular";
     src: url("/fonts/digital.ttf");
@@ -11,7 +10,11 @@ body {
     background: url(/images/space.png);
     text-align: center;
     font-family: "Hack-Regular";
+    font-size: 22px;
+}
 
+a {
+    color: #fff;
 }
 
 option {
@@ -24,11 +27,13 @@ strong {
 }
 
 #songtitle {
-    font-size: large;
+    font-size: 22px;
     height: 75px;
 }
 
-#winamp {}
+#winamp {
+    margin-top: 50px;
+}
 
 #timeremaining {
     position: relative;
@@ -115,4 +120,9 @@ strong {
     border: 1px solid #0f0;
     background-color: #000;
     color: #0f0;
+}
+
+#formdiv {
+   margin: 5px 5px 5px 5px;
+    
 }

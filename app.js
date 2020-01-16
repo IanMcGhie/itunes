@@ -22,21 +22,23 @@ var playList = [];
 var clientList = [];
 
 var state = {
-    playlist: [],
+    timeremaining: 0,
+    duration: 0,
+    playList: [],
     shuffle: true,
-    volume: 50,
-    queuesong: -1
+    volume: 35,
+    queueSong: -1,
+    setVolume: false
 };
-
-console.log("initial state");
-console.dir(state);
 
 execFile('xmms', ['-Son']); // turn shuffle on
 
+getPlaylist();
 setupExpress();
 setupWebsocket();
 
 function setupExpress() {
+    console.log("setting up express");
     var path = require('path');
 
     // view engine setup
@@ -53,15 +55,18 @@ function setupExpress() {
     app.get('/setvolume/:level', (_request, _response, _next) => {
         state.volume =  parseInt(_request.params.level);
         execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
+        
+        sendState();
         _next();
     });
 
     app.get('/queuesong/:index', (_request, _response, _next) => {
-        var queuesong = playListRootDir + playList[parseInt(_request.params.index)];
+        var queueSong = playListRootDir + playList[parseInt(_request.params.index)];
         // this adds it to the bottom of the playList & queues it
-        execFile("xmms", ['-Q', queuesong]);
-        state.queuesong = parseInt(_request.params.index);
-        _next();
+        execFile("xmms", ['-Q', queueSong]);
+        state.queueSong = parseInt(_request.params.index);
+        
+        sendState();
     });
 
     app.get('/playsong/:index', (_request, _response, _next) => {
@@ -73,8 +78,6 @@ function setupExpress() {
     app.get('/next|/prev|/pause|/shuffle', (_request, _response, _next) => {
         var command = _request.url.replace('/','');
 
-        console.log('command -> ' + command)
-
         switch (command) {
             case "next":
             case "prev":
@@ -83,73 +86,95 @@ function setupExpress() {
             break;
 
             case "pause":
-                state.paused = !state.paused;
                 execFile('qxmms', ['pause']);
+                state.paused = !state.paused;
+                sendState();
             break;
 
             case "shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
+                sendState();
             break;
         } //switch (_request.url) {
-
-        _next();
+            
+    _next();
     });
 
     // xmms new song playing...this request came from xmms
     app.get('/newsong/*', (_request, _response, _next) => {
         var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
         state.currentlyplaying = getSongIndex(songname);
+        console.log("new song -> " + songname + " index -> " + getSongIndex(songname));
+        
+        sendState();
         
         _next();
+    });
+
+    // blackberry state
+    app.get('/getbbstate', (_request, _response, _next) => {
+        console.log("get bbstate() playlist entries -> " + playList.length)
+        state.playList = playList;
+        state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
+        state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
+        state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
+
+        console.dir(state)
+           
+        _response.send(JSON.stringify(state));
+        delete state.playList;
+
+        _response.end();
     });
 
     // send state to clients
     app.get('*', (_request, _response) => {
         console.log("\nincoming url -> " + _request.url);
 
-        state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
-        state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-        state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
-
-        console.dir(state);
-
         _response.render('index', {
             title: playList[state.currentlyplaying]
         });
-
-        for (var i = 0; i < clientList.length; i++) {
-            // dont send new volume level back to client that 
-            // changed it....creates an infinite loop
-            if ((clientList[i] != _request.remoteAddress) && (_request.url.split('/')[1] != 'setvolume')) {
-                console.log("Sending state to -> " + clientList[i].remoteAddress);
-
-               clientList[i].sendUTF(JSON.stringify(state));
-            }
-        } // for (var i = 0;i < clientList.length;i++) {
-
-        // reset one shot
-        state.queuesong = -1;
-
+        
         _response.end();
     });
+
+    console.log("express setup")
 } // function setupExpress() {
+
+function sendState() {
+    console.log("current state")
+    
+    state.currentlyplaying = execFileSync('qxmms', ['-p']) - 1;
+    state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
+    state.timeremaining = state.duration - execFileSync('qxmms', ['-nS']);
+
+    console.dir(state)
+
+    for (var i = 0; i < clientList.length; i++) {
+        // dont send new volume level back to client that 
+        console.log("Sending state to -> " + clientList[i].remoteAddress);
+        clientList[i].sendUTF(JSON.stringify(state));
+
+        // reset one shot
+        state.queueSong = -1;
+    } // for (var i = 0; i < clientList.length; i++) {
+
+}
 
 function handleRequest(_request) {
     var connection = _request.accept("json", _request.origin);
 
-    console.log("new connection from -> " + connection.remoteAddress + " sending playlist");
-
+    console.log("new connection from -> " + _request.remoteAddress)
+    state.playList = playList;
     clientList.push(connection);
-    // only send playlist on initial client connection
-    // make sure the most current playlist is loaded
-    getPlaylist();
-
-    connection.sendUTF(JSON.stringify(state));
-    state.playlist = [];
+    sendState();
+    delete state.playList;
 }; // function handleRequest(_request) {
 
 function setupWebsocket() {
+    console.log("setting up websocket");
+
     var wsHttp = http.createServer((_request, _response) => {
         console.log((new Date()) + ' Received request for ' + _request.url);
 
@@ -162,15 +187,20 @@ function setupWebsocket() {
         autoAcceptConnections: false
     }); // var wsServer = new wsServer({
 
-    wsServer.on('request', (_request) => handleRequest(_request));
+    wsServer.on('request', (_request) => {
+        handleRequest(_request);
+    });
 
     wsServer.on('close', (_connection) => {
+        console.log("colsing connection");
         clientList = clientList.filter(function(el, idx, ar) {
             return el.connected;
         });
 
     console.log((new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
     }); //  connection.on('close', function(_connection) {+
+
+        console.log("websocket setup");
 } // function setupWebsocket() {
 
 function getSongIndex(_songname) {
@@ -182,23 +212,27 @@ function getSongIndex(_songname) {
 }
 
 function getPlaylist() {
-    /* xmms playlist file looks like this
-    [playlist]
+    /* xmms playList file looks like this
+    [playList]
     NumberOfEntries=5297
     File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
     File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
+    console.log("reading playlist -> " + playListFile);
     playList = fs.readFileSync(playListFile, "utf8").split("\n");
 
-    playList.shift(); // removes [playlist] 
+    playList.shift(); // removes [playList] 
     playList.shift(); // removes NumberOfEntries=5297 
     playList.length--; // the last line is a cr
 
     playList.forEach((_entry, _index) => {
         playList[_index] = playList[_index].split(playListRootDir)[1];
-        state.playlist[_index] = playList[_index];
+      //  state.playList[_index] = playList[_index];
     });
+
+    state.playList = playList;
+    console.log("found " + playList.length + " entries")
 } // function getPlaylist() {
 
 module.exports = app;
