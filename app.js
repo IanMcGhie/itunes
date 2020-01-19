@@ -32,8 +32,8 @@ var state = {
     paused: false
 };
 
-execFile('xmms', ['-Son','-p']); // turn shuffle on / play even if paused
 state.currentlyPlaying  = execFileSync('qxmms', ['-p']) - 1;
+execFile('xmms', ['-Son','-p']); // turn shuffle on / play even if paused
 
 getplayList();
 setupExpress();
@@ -62,7 +62,7 @@ function setupExpress() {
         _next();
     });
 
-    app.get('/setvolume/:level', (_request,_response, _next) => {
+    app.get('/setvolume/:level', (_request,_response) => {
         if (state.volume !=  parseInt(_request.params.level)) {
             state.volume =  parseInt(_request.params.level); 
             console.log("setting volume -> " + state.volume);
@@ -74,25 +74,21 @@ function setupExpress() {
         _response.end();
     });
 
-    app.get('/queueSong/:index', (_request, _response, _next) => {
+    app.get('/queuesong/:index', (_request, _response) => {
         var queueSong = playListRootDir + playList[parseInt(_request.params.index)];
         console.log("queueing song -> " + queueSong);
         // this adds it to the bottom of the playList & queues it
         execFile("xmms", ['-Q', queueSong]);
         state.queueSong = parseInt(_request.params.index);     
         sendState();
-        
-        _next();
     });
 
-    app.get('/playsong/:index', (_request, _response, _next) => {
+    app.get('/playsong/:index', (_request, _response) => {
         execFile("qxmms", ['jump', parseInt(_request.params.index) + 1]);
         state.paused = false;
-
-        _next();
     });
 
-    app.get('/next|/prev|/pause|/shuffle', (_request, _response, _next) => {
+    app.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
         var command = _request.url.replace('/','');
 
         switch (command) {
@@ -114,19 +110,15 @@ function setupExpress() {
                 sendState();
             break;
         } //switch (_request.url) {
-            
-    _next();
     });
 
     // xmms new song playing...this request came from xmms
-    app.get('/newsong/*', (_request, _response, _next) => {
+    app.get('/newsong/*', (_request, _response) => {
         var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
         console.log("new song -> " + songname + " index -> " + getSongIndex(songname));
 
         state.currentlyPlaying = getSongIndex(songname);
         sendState();
-
-        _next();
     });
 
     app.get('/getbbstate', (_request, _response) => {
@@ -171,7 +163,6 @@ function setupWebsocket() {
 
     wsServer.on('connect', (_connection) => {
         console.log("new connection from -> " + _connection.remoteAddress);
-
         clientList.push(_connection);
     });
 

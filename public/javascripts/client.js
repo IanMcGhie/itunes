@@ -83,10 +83,9 @@ function getSongSelectedIndex() {
 // timer for progress bar & song duration display
 function setupTimer() {
     setInterval(function() {
-        if (!state.paused)
-            if (state.timeRemaining > 0) {
+            if (!state.paused && (state.timeRemaining-- > 0)) {
                 var margin = 230 - ((state.duration - state.timeRemaining) / state.duration) * 375;
-                state.timeRemaining--;
+
                 $("#progressbar").css("right", margin);
                 $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
             }
@@ -113,8 +112,7 @@ function setupVolumeControl() {
         if (_event.originalEvent.deltaY < 0)
             state.volume++;
                 else
-                    if (state.volume > 0)
-                        state.volume--;
+                   state.volume--;
 
         // set volume here...once
         // the server won't return a response here
@@ -225,7 +223,7 @@ function setupBodyKBEvents() {
             break;
 
             case 81: // q
-                $.get("queueSong/" + getSongSelectedIndex());
+                $.get("queuesong/" + getSongSelectedIndex());
             break;
         } // switch (_event.which) {
     }); // $("body").keyup(function(_event) {
@@ -301,14 +299,6 @@ function setupWebsocket() {
 
     var client = new WebSocket(serverUrl,"winamp");
 
-    client.open = function(_msg) {
-        console.log("connection opened")    
-    }
-
-    client.onclose = function(_msg) {
-        console.log("connection closed")
-    }
-
     client.onmessage = function(_response) {
         var message  = JSON.parse(_response.data).msg;
         var jsonData = JSON.parse(_response.data).data;
@@ -333,8 +323,6 @@ function setupWebsocket() {
 
     updateUI();
     } //   client.onmessage = function(_response) {
-
-console.log("websocket setup");
 } 
 
 function charsAllowed(_value) {
@@ -358,16 +346,15 @@ function setupSearchAutoComplete() {
         fetch: function(_text, _callback) {
             var match   = _text.toLowerCase();
             var items   = playList.map(function(_n) {
-               var result  = _n.replace(/^\/[a-z]\//i, "");
-               result      = result.replace(/\.mp3$/i, "");
+                var result  = _n.replace(/^\/[a-z]\//i, "");
+                result      = result.replace(/\.mp3$/i, "");
             
                 return {
                     label: result,
                     group: "Results"
-                    }
-                });
-
-            _callback(items.filter(function(_n) {
+                }
+            });
+        _callback(items.filter(function(_n) {
                 console.log("onfetch ****")
                 
                 if (_n.label)
