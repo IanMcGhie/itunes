@@ -18,7 +18,7 @@ $(document).ready(function() {
     setupVolumeControl();
 
     if (isBlackBerry)
-        getBBState(); // my blackberry foan
+        getBBState(true); // my blackberry foan
             else
                 setupWebsocket();
 
@@ -44,14 +44,22 @@ String.prototype.toMMSS = function() {
     return minutes + ":" + seconds; // + hours;
 } // String.prototype.toMMSS = function () {
 
-function getBBState() {
-    $("body").css("width","500px");
 
+function getBBState(_init) {
     $.getJSON("getbbstate", function(_stateJson) {
         parseState(_stateJson);
-        populateSelectBox();
-        setupSearchAutoComplete();
-        updateUI();
+
+        if (_init) {
+            $("body").css("width","500px");
+            $("#progressbar").css("display","absolute");
+            $("#mp3search").css("width","300%");
+            $("#winamp").css("margin-top","50px");
+
+            populateSelectBox();
+            setupSearchAutoComplete();
+        }
+
+    updateUI();
     });    
 }
 
@@ -79,17 +87,19 @@ function getSongSelectedIndex() {
 
 // timer for progress bar & song duration display
 function setupTimer() {
+    console.log("tr -> " + state.timeRemaining);
     setInterval(function() {
         if (!state.paused) {
-            var margin = 0;
 
             state.timeRemaining--;
 
-            if ((state.timeRemaining / state.duration) > 0)
-                margin = 140 - (state.timeRemaining / state.duration) * 375;
-     
-        $("#progressbar").css("left", margin);
-        $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
+            if (state.timeRemaining > 0) {
+                var margin = 0;
+
+                margin = 230 - ((state.duration - state.timeRemaining) / state.duration) * 375;
+                $("#progressbar").css("right", margin);
+                $("#timeremaining").text('-' + (state.timeRemaining).toString().toMMSS());
+            }
        } // if (!state.paused) {
     }, 1000);
 } // function setupTimer(){
@@ -129,8 +139,7 @@ function setupVolumeControl() {
 function setupClickListeners() {
     if (isBlackBerry)
         $("#winamp,#timeremaining").click(function() {
-//            getBBState();
-        location.reload();
+            getBBState();
     });
 
     $("#pause").click(function() { 
@@ -323,17 +332,17 @@ function setupWebsocket() {
     var client = new WebSocket(serverUrl,"winamp");
 
     client.open = function(_msg) {
-        console.log("connection opened")
-         
+        console.log("connection opened")    
     }
 
     client.onclose = function(_msg) {
         console.log("connection closed")
     }
 
-    client.onmessage= function(_response) {
+    client.onmessage = function(_response) {
+        var message  = JSON.parse(_response.data).msg;
         var jsonData = JSON.parse(_response.data).data;
-        var message = JSON.parse(_response.data).msg;
+        
         console.log("message received -> " + message);
         
         switch (message) {

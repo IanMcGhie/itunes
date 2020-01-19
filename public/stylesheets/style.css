@@ -32,7 +32,7 @@ strong {
 }
 
 #winamp {
-    margin-top: 50px;
+   
 }
 
 #timeremaining {
@@ -99,18 +99,19 @@ strong {
 }
 
 #playlist {
+    display: block;
     font: inherit;
     margin: auto;
 }
 
 #mp3search {
-    margin: 25px 0px 25px 0px;
+    margin: 0px 0px 25px 0px;
     font: inherit;
     text-align: left;
     border: 1px solid #0f0;
     background-color: #000;
     color: inherit;
-    width: 70%;
+    width: 65%;
 }
 
 #playsong,
@@ -123,6 +124,6 @@ strong {
 }
 
 #formdiv {
-   margin: 5px 5px 5px 5px;
+  
     
 }

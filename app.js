@@ -124,14 +124,12 @@ function setupExpress() {
     app.get('/getbbstate', (_request, _response) => {
         console.log("get bbstate() playList entries -> " + playList.length)
         
-        state.currentlyPlaying = execFileSync('qxmms', ['-p']) - 1;
+        state.currentlyPlaying = parseInt(execFileSync('qxmms', ['-p'])) - 1;
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-        state.timeRemaining = state.duration - execFileSync('qxmms', ['-nS']);
+        state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
         state.playList= playList;
         
-        console.dir(state)
         _response.send(state);
-//        _response.send(JSON.stringify({msg: "state", data: state}));
         delete state.playList;
     });
 
@@ -147,14 +145,16 @@ function setupExpress() {
 } // function setupExpress() {
 
 function sendState(_dontSendTo) {
+    state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
+    state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
+    
     for (var i = 0; i < clientList.length; i++) 
         if (clientList[i].remoteAddress == _dontSendTo) {
-            console.log("not sending state to -> " + _dontSendTo);
+            console.log("not sending state to -> " + _dontSendTo); // dont send volume back to client that changed it
             } else {
                     console.log("Sending state to -> " + clientList[i].remoteAddress);
                     clientList[i].send(JSON.stringify({msg: "state", data: state}));
             }
- 
     state.queueSong = -1;
 } // function sendState(_dontSendTo) {
 
@@ -182,11 +182,13 @@ function setupWebsocket() {
 
     wsServer.on('request', (_request) => {
         console.log("Received request -> " + _request.url);
+    //    console.dir(_request)
         var connection = _request.accept('winamp', _request.origin);
 
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-        state.timeRemaining = state.duration - execFileSync('qxmms', ['-nS']);
+        state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
 
+        console.dir(state)
         connection.send(JSON.stringify({ msg: "state", data: state }));
         connection.send(JSON.stringify({ msg: "playList", data: JSON.stringify({'playList': playList}) 
         }));
