@@ -7,8 +7,8 @@ const pug   = require('pug');
 const http  = require('http');
 const fs    = require("fs");
 const WebSocketServer = require('websocket').server;
-
 const wsPort = 6502;
+const serverUrl   = "ws://winamp:" + wsPort;
 const playListFile = "/home/ian/monday.pls";
 const playListRootDir = "/home/ian/mp3"; 
 const {
@@ -54,6 +54,14 @@ function setupExpress() {
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'pug');
 
+    app.get('*', (_request, _response, _next) => {
+        console.log("\nincoming url -> " + _request.url);
+        
+        _response.render('index');
+
+        _next();
+    });
+
     app.get('/setvolume/:level', (_request,_response, _next) => {
         if (state.volume !=  parseInt(_request.params.level)) {
             state.volume =  parseInt(_request.params.level); 
@@ -72,7 +80,8 @@ function setupExpress() {
         // this adds it to the bottom of the playList & queues it
         execFile("xmms", ['-Q', queueSong]);
         state.queueSong = parseInt(_request.params.index);     
-
+        sendState();
+        
         _next();
     });
 
@@ -94,7 +103,7 @@ function setupExpress() {
             break;
 
             case "pause":
-                execFile('qxmms', ['pause']);
+                execFile('qxmms', [command]);
                 state.paused = !state.paused;
                 sendState();
             break;
@@ -120,28 +129,15 @@ function setupExpress() {
         _next();
     });
 
-    // blackberry state
     app.get('/getbbstate', (_request, _response) => {
-        console.log("get bbstate() playList entries -> " + playList.length)
-        
         state.currentlyPlaying = parseInt(execFileSync('qxmms', ['-p'])) - 1;
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
-        state.playList= playList;
+        state.playList      = playList;
         
         _response.send(state);
         delete state.playList;
     });
-
-    app.get('*', (_request, _response) => {
-        console.log("\nincoming url -> " + _request.url);
-        console.log("current state");
-        console.dir(state);
-        
-        _response.render('index');
-    });
-
-    console.log("express setup")
 } // function setupExpress() {
 
 function sendState(_dontSendTo) {
@@ -155,6 +151,7 @@ function sendState(_dontSendTo) {
                     console.log("Sending state to -> " + clientList[i].remoteAddress);
                     clientList[i].send(JSON.stringify({msg: "state", data: state}));
             }
+            
     state.queueSong = -1;
 } // function sendState(_dontSendTo) {
 
@@ -166,8 +163,6 @@ function setupWebsocket() {
         _response.writeHead(404);
         _response.end();
     }).listen(wsPort);
-
-    var serverUrl   = "ws://winamp:" + wsPort;
 
     var wsServer = new WebSocketServer({
         url: serverUrl,
@@ -182,9 +177,8 @@ function setupWebsocket() {
 
     wsServer.on('request', (_request) => {
         console.log("Received request -> " + _request.url);
-    //    console.dir(_request)
-        var connection = _request.accept('winamp', _request.origin);
 
+        var connection      = _request.accept('winamp', _request.origin);
         state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
         state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
 
