@@ -59,8 +59,8 @@ strong {
 
 #shuffleenabled {
     position: relative;
-    bottom: 103px;
-    right: 31px;
+    bottom: 100px;
+    right: 24px;
 }
 
 .ui-slider .ui-slider-handle {
@@ -96,6 +96,7 @@ strong {
 #autocompleterow {
     text-align: center;
     font: inherit;
+    margin: 100px 100px 100px 100px;
 }
 
 #playlist {
@@ -104,7 +105,7 @@ strong {
     margin: auto;
 }
 
-#mp3search {
+#searchinput {
     margin: 0px 0px 25px 0px;
     font: inherit;
     text-align: left;
@@ -122,6 +123,19 @@ strong {
     background-color: #000;
     color: #0f0;
 }
+
+[id*="resultrow_"]  {
+    text-align: left;
+}
+
+/*div.selected {
+    */
+[id*="resultrow_"]
+    background: #fff;
+    color: #0f0;
+    cursor: pointer;
+}
+
 
 #formdiv {
   

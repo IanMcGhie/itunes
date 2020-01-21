@@ -1,26 +1,39 @@
 "use strict";
-var state = {};
+var state = { volume: 0, timeRemaining: 0};
 var playList = [];
 var websocketPort = 6502;
 var serverUrl   = "ws://winamp:" + websocketPort;
-var searchDropdownVisible = false;
 var isBlackBerry = false;
+var resultrow = 0;
 
 $(document).ready(function() {
     var isFirefox = typeof InstallTrigger !== 'undefined';
     var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
 
+    $(window).keydown(function(event) {
+    if (event.keyCode == 13) {
+        event.preventDefault();
+        return false;
+        }
+    });    
+
     isBlackBerry = !isFirefox && !isChrome;
 
-    if (isBlackBerry)
-        getBBState(true); // my blackberry foan
-            else
-                setupWebsocket();
+    if (isBlackBerry) {
+        $("body").css("width","500px");
+        $("#progressbar").css("display","absolute");
+        $("#searchinput").css("width","300%");
+        $("#winamp").css("margin-top","50px");
+        
+        getBBState("getbbplaylist"); // my blackberry foan
+        getBBState("getbbstate");    // doesnt understand ajax....or newer js
+        } else
+            setupWebsocket();
             
     setupBodyKBEvents();
-    setupClickListeners();
-    setupSearchKBEvents();
+    setupSearch();
     setupPlayListKBEvents();
+    setupMouseEvents();
     setupVolumeControl();
     setupTimer();
 }); // $(document).ready(() => {
@@ -40,55 +53,41 @@ String.prototype.toMMSS = function() {
     return minutes + ":" + seconds;
 } // String.prototype.toMMSS = function () {
 
-function getBBState(_init) {
-    $.getJSON("getbbstate", function(_state) {
-        state = _state;
+function getBBState(_getWhat) {
+    switch (_getWhat) {
+        case "getbbplaylist":
+            $.getJSON(_getWhat, function(_state) {
+                playList = _state;
+                setupPlayList();
+                setupSearchAutoComplete();
+            });
+        break;
 
-        if (_init) {
-            $("body").css("width","500px");
-            $("#progressbar").css("display","absolute");
-            $("#mp3search").css("width","300%");
-            $("#winamp").css("margin-top","50px");
-        }
-
-        if ('playList' in state) {
-            playList = state.playList;
-            populateSelectBox();
-            setupSearchAutoComplete();
-       }
-
-        updateUI();
-    });    
+        default: // get state
+            setTimeout(function() {
+                $.getJSON(_getWhat, function(_state) {
+                    state = _state;
+                    updateUI();
+                });
+            },150); 
+    }
 }
 
-function getSongTitle(_index) {
-    // /a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
-    // remove dir/ from front of string &
-    var result = playList[_index].replace(/^\/[a-z]\//i, "");
-
-    return result.replace(/\.mp3$/i, ""); // and the .mp3 at the end
-}
-
-// return playList array index of song in #mp3search textbox
 function getSongSelectedIndex() {
-    for (var i = 0; i < playList.length; i++) 
-        if (getSongTitle(i) == $("#mp3search").val())
-            return i;
-
-    console.log("could not index for -> " + $("#mp3search").val());
-
-    return -1;
+    return playList.indexOf($("#playlist").find("option:selected").val());
 }
 
 // timer for progress bar & song duration display
 function setupTimer() {
     setInterval(function() {
-            if (!state.paused && (state.timeRemaining-- > 0)) {
-                var margin = 230 - ((state.duration - state.timeRemaining) / state.duration) * 375;
+        if (!state.paused && (state.timeRemaining >= 0)) {
+            state.timeRemaining--
+            
+            var margin = 230 - ((state.duration - state.timeRemaining) / state.duration) * 375;
 
-                $("#progressbar").css("right", margin);
-                $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
-            }
+            $("#progressbar").css("right", margin);
+            $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
+        }
     }, 1000);
 } // function setupTimer(){
 
@@ -118,40 +117,36 @@ function setupVolumeControl() {
         // the server won't return a response here
         // so we dont set it over & over...
         $("#volume").slider("value",state.volume);
-
         $.get("setvolume/" + state.volume);
     }) // $("#winamp,#volume,#timeremaining,#pause,#prev,#next,#shuffle").on("wheel", function(_event) {
 } // function setupVolumeControl() {
  
-function setupClickListeners() {
-    if (isBlackBerry)
-        $("#winamp,#timeremaining").click(function() {
-            getBBState();
-    });
+function setupMouseEvents() {
+    $("#prev,#next,#shuffle,#pause,#winamp,#timeremaining").click(function() { 
+        $.get((this).id, function () {
+            if (isBlackBerry)
+                getBBState("getbbstate");
 
-    $("#prev,#next,#shuffle,#pause").click(function() { 
-        if ((this).id == "pause")
-            state.paused != state.paused;
-        
-        $.get((this).id);
+        });
      });
 
     $("#queuesong,#playsong").click(function() {
-        $.get((this).id + "/" + getSongSelectedIndex());
+        if (playList.indexOf($("#playlist").find("option:selected").val()) >= 0) // if we can find the index for song
+            $.get((this).id + "/" + playList.indexOf($("#searchinput").val())); 
     });
     
     $("#playlist").dblclick(function() {
-        $.get("playsong/" + $("#playlist").find("option:selected").index())
+        $.get("playsong/" + $("#playlist").find("option:selected").index());
     });
 
-    $("#playlist").click(function() {
-        $("#mp3search").val($("#playlist").find("option:selected").val());
+    $("#playlist").change(function() {
+        $("#searchinput").val($("#playlist").find("option:selected").val());
     });
 
-    $("#listen").on("click", function(){
+    $("#listen").on("click", function() {
         window.open("http://crcw.mb.ca:8000/winamp.m3u");
     });
-} // function setupClickListeners() {
+} // function setupMouseEvents() {
 
 function setupPlayListKBEvents() {
     $("#playlist").focusin(function () {
@@ -187,26 +182,36 @@ function setupPlayListKBEvents() {
 function setupBodyKBEvents() {
     $("body").keyup(function(_event) {
           switch (_event.which) {
+            case 90: // z
+                if (isBlackBerry) {
+                        $.get("prev");
+                        getBBState("getbbstate");
+                    } else
+                        $.get("prev");
+            break;
+
             case 66: // b
-                $.get("next");
+                if (isBlackBerry) {
+                        $.get("next");
+                        getBBState("getbbstate");
+                    } else
+                       $.get("next");
             break;
 
             case 79: // o
-                state.volume++;
+            case 73: // i
+                if (_event.which == 79) 
+                    state.volume++;
+                        else
+                            state.volume--;
+                
                 $.get("setvolume/" + state.volume, function(_response) {
                     updateUI();
                 });
             break;
 
-            case 73: // i
-                state.volume--;
-                $.get("setvolume/" + state.volume,function(_response) {
-                    updateUI();
-                });
-            break;
-
             case 74: // j
-                $("#mp3search").focus();
+                $("#searchinput").focus();
             break;
 
             case 67: // c
@@ -214,12 +219,11 @@ function setupBodyKBEvents() {
                 state.paused = !state.paused;
             break;
 
-            case 90: // z
-                $.get("prev");
-            break;
-
             case 83: // s
                 $.get("shuffle");
+
+                if (isBlackBerry)
+                    getBBState("getbbstate")
             break;
 
             case 81: // q
@@ -229,46 +233,51 @@ function setupBodyKBEvents() {
     }); // $("body").keyup(function(_event) {
 } // function bodyKBEvents(_event) {
 
-function setupSearchKBEvents() {
-    $("#mp3search").focusin(function() {
-        $("#mp3search").css("border", "2px solid #5f5");
+function setupSearch() {
+    $("#searchinput").focusin(function() {
+        $("#searchinput").css("border", "2px solid #5f5");
         $("body").off("keyup");
-        $("#mp3search").val("");
+        $("#searchinput").val("");
 
-        $("#mp3search").keyup(function(_event) {
+        $("#searchinput").keyup(function(_event) {
             switch(_event.which) {
                 case 13:
-                    $.get("playsong/" + getSongSelectedIndex());
+                    $.get("playsong/" + playList.indexOf($("#searchinput").val()));
+                    $("#playlist").focus();
                 break;
 
                 case 27: // esc key
-                    $("#mp3search").blur();
+                    $("#searchinput").blur();
                 break;
             } // switch(_event.which) {
-        }); // $("#mp3search").keyup(function(_event) {
-    }); // $("#mp3search").focusin(() => {
+        }); // $("#searchinput").keyup(function(_event) {
+    }); // $("#searchinput").focusin(() => {
 
-    $("#mp3search").focusout(function() {
-        $("#mp3search").css("border", "1px solid #0f0");
-        $("#mp3search").off("keyup");
+    $("#searchinput").focusout(function() {
+        var index = playList.indexOf($("#searchinput").val());
+        
+        $("#searchinput").css("border", "1px solid #0f0");
+        $("#searchinput").off("keyup");
 
-searchDropdownVisible = false;
-console.log("dropdown not visible")
-
-        if (getSongSelectedIndex() == -1)
-            $("#mp3search").val(getSongTitle(state.currentlyPlaying));
+        if (index >= 0)
+            $("#searchinput").val(playList[index]);
+                else
+                    $("#searchinput").val($("#playlist").find("option:selected").val());
 
         setupBodyKBEvents();
-    }); // $("#mp3search").focusout(function() {
-} // function setupSearchKBEvents() {
+    }); // $("#searchinput").focusout(function() {
+} // function setupSearch() {
 
 function updateUI() {
-    $("#songtitle").text(getSongTitle(state.currentlyPlaying) + " (" + state.duration.toString().toMMSS() + ")");
-    $("#title").text(getSongTitle(state.currentlyPlaying));
-    $("#playlist>option:eq(" + state.currentlyPlaying + ")").prop('selected', true);
-    $("#mp3search").val(getSongTitle(state.currentlyPlaying));
-    $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
-    $("#volume").slider("value", state.volume);
+    $("#title").text(playList[state.currentlyPlaying]);
+    $("#songtitle").text(playList[state.currentlyPlaying] + " (" + parseInt(state.duration).toString().toMMSS() + ")");
+    $("#searchinput").val(playList[state.currentlyPlaying]);
+
+    if ($("#volume").slider("value") != state.volume)
+        $("#volume").slider("value", state.volume);
+
+    if (playList.length > 0)
+        $("#playlist>option:eq(" + state.currentlyPlaying + ")").prop('selected', true);
 
     if (state.shuffle)
         $("#shuffleenabled").css("visibility", "visible");
@@ -277,19 +286,22 @@ function updateUI() {
 
     if (state.queueSong >= 0) {
         $("#dialog").css("display", "inline-block");
-        $("#dialog").html(getSongTitle(state.queueSong) + " queued.");
+        $("#dialog").html(playList[state.queueSong] + " queued.");
         $("#dialog").hide("drop", { direction: "down" }, 5000);
+
+        state.queueSong = -1;
     }
+
 } // function updateUI() {
 
-function populateSelectBox() {
+function setupPlayList() {
     // add playlist songs to select box
     for (var i = 0; i < playList.length; i++) {
         var select = document.getElementById("playlist");
         var option = document.createElement("option");
 
         option.setAttribute("id", i);
-        option.text = getSongTitle(i);
+        option.text = playList[i];
         select.add(option);
     }
 }
@@ -314,7 +326,7 @@ function setupWebsocket() {
                 playList = JSON.parse(jsonData).playList;
                 console.log("playlist received length -> " + playList.length);
 
-                populateSelectBox();
+                setupPlayList();
                 setupSearchAutoComplete();
             break;
         }//switch (message) {
@@ -327,74 +339,91 @@ function setupWebsocket() {
 
 function charsAllowed(_value) {
     var allowedChars = new RegExp(/^[a-zA-Z\s]+$/);
-
     return allowedChars.test(_value);
 }
 
 function setupSearchAutoComplete() {
-    console.log("setupSearchAutoComplete()");
+    console.log("setting up AutoComplete");
+    var minLength = 2;
 
+    if (isBlackBerry)
+        minLength = 5;
+    /*
+    $("# ").change(function() {
+        $("#searchinput").val($("#playlist").find("option:selected").val());
+    });
+
+$( "select" )
+  .change(function() {
+    var str = "";
+    $( "select option:selected" ).each(function() {
+      str += $( this ).text() + " ";
+    });
+    $( "div" ).text( str );
+  })
+  .trigger( "change" );
+*/
     autocomplete({
         preventSubmit: true,
-        input: document.getElementById('mp3search'),
-        minLength: 2,
-        onSelect: function(_item, inputfield) {
-            console.log("onselect ****");
+        input: document.getElementById('searchinput'),
+        minLength: minLength,
 
-            $("#mp3search").val(_item.label);
+        onSelect: function(_item, inputfield) {
+            $("#searchinput").val(_item.label);
+      //      console.log("onselect ****");
         },
-        fetch: function(_text, _callback) {
-            var match   = _text.toLowerCase();
+        fetch: function(_match, _callback) {
+            var match   = _match.toLowerCase();
             var items   = playList.map(function(_n) {
-                var result  = _n.replace(/^\/[a-z]\//i, "");
-                result      = result.replace(/\.mp3$/i, "");
-            
                 return {
-                    label: result,
+                    label: _n,
                     group: "Results"
                 }
             });
-        _callback(items.filter(function(_n) {
-                console.log("onfetch ****")
-                
-                if (_n.label)
+        
+            _callback(items.filter(function(_n) {
+                 // console.log("onfetch ****")
+                if (_n.label) 
                     return _n.label.toLowerCase().indexOf(match) !== -1;
             }));
         },
         render: function(_item, _value) {
-            console.log("onrender ****")
-searchDropdownVisible = true;
-            var itemElement = document.createElement("div");
-            itemElement.id = "row";
-            itemElement.setAttribute("style", "text-align: left");
-            
+          //  console.log("onrender ****")
+//          console.dir(_item) $("#playlist").focusin(function () {
+            var itemElement     = document.createElement("div");
+            itemElement.id      = "resultrow_" + resultrow;
+            resultrow++;
+
+            $(itemElement.id).on("focus", function () {
+                alert("hi");
+            });
+
             if (charsAllowed(_value)) {
                 var regex = new RegExp(_value, 'gi');
                 var inner = _item.label.replace(regex, function(_match) {
-                    return "<strong>" + _match + "</strong>"
+                    return "<strong>" + _match + "</strong>";
                 });
 
                 itemElement.innerHTML = inner;
             } else {
-                itemElement.textContent = _item.label;
+                    itemElement.textContent = _item.label;
             }
-        
-        $(itemElement).keyup(function(_event) {
-            if (_event.which ==13) {
-                console.log("keyup itemElement")
-                $.get("playsong/" + getSongSelectedIndex());
-                }
-            })
  
             return itemElement;
         },
         emptyMsg: "MP3 not found",
         customize: function(_input, _inputRect, _container, _maxHeight) {
-            if (_maxHeight < 100) {
+            if (isBlackBerry)
+                _container.style.maxWidth = "500px";
+            
+            resultrow = 0;
+/*      You can use the following snippet to display autocomplete above the input field if there is not enough space for it.
+      if (_maxHeight < 100) {
                 _container.style.top = "";
                 _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
                 _container.style.maxHeight = "140px";
             } // if (maxHeight < 100) {
+                */
         } // customize: function(input, inputRect, container, maxHeight) {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {

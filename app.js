@@ -3,24 +3,25 @@
 // song change plugin...
 // set command to
 // lynx --dump http://winamp:3000/newsong/%f
-const pug   = require('pug');
-const http  = require('http');
-const fs    = require("fs");
-const WebSocketServer = require('websocket').server;
-const wsPort = 6502;
-const serverUrl   = "ws://winamp:" + wsPort;
-const playListFile = "/home/ian/monday.pls";
-const playListRootDir = "/home/ian/mp3"; 
+const pug               = require('pug');
+const http              = require('http');
+const fs                = require("fs");
+const WebSocketServer   = require('websocket').server;
+const wsPort            = 6502;
+const serverUrl         = "ws://winamp:" + wsPort;
+const playListFile      = "/home/ian/monday.pls";
+const playListRootDir   = "/home/ian/mp3"; 
+const express           = require('express');
+const app               = express();
 const {
     execFile,
     execFileSync,
     readFile
 } = require('child_process');
 
-var express = require('express');
-var app     = express();
-var playList= [];
-var clientList = [];
+var playList    = [];
+var playListFullPath = [];
+var clientList  = [];
 
 var state = {
     timeRemaining: 0,
@@ -32,12 +33,20 @@ var state = {
     paused: false
 };
 
-state.currentlyPlaying  = execFileSync('qxmms', ['-p']) - 1;
-execFile('xmms', ['-Son','-p']); // turn shuffle on / play even if paused
-
 getplayList();
 setupExpress();
 setupWebsocket();
+queryXmms();
+
+execFile('xmms', ['-Son','-p']); // turn shuffle on / play even if paused
+
+function queryXmms() {
+    var songFullPath = execFileSync('qxmms',['-f']).toString().replace(/^\/\//,"").trim(); // path has two extra // at the begining & a cr at the end
+    
+    state.currentlyPlaying = playListFullPath.indexOf(songFullPath);
+    state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
+    state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
+}
 
 function setupExpress() {
     console.log("setting up express");
@@ -54,38 +63,30 @@ function setupExpress() {
     app.set('views', path.join(__dirname, 'views'));
     app.set('view engine', 'pug');
 
-    app.get('*', (_request, _response, _next) => {
+    app.get('*', (_request, _response,_next) => {
         console.log("\nincoming url -> " + _request.url);
-        
-        _response.render('index');
-
         _next();
     });
 
-    app.get('/setvolume/:level', (_request,_response) => {
-        if (state.volume !=  parseInt(_request.params.level)) {
-            state.volume =  parseInt(_request.params.level); 
-            console.log("setting volume -> " + state.volume);
-        }
-        
-        execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
-        sendState(_request.ip); // dont send volume back to client who sent it
-  
+    app.get('/getbbstate', (_request, _response) => {
+        console.log("getbbstate");
+        console.dir(state)
+
+        queryXmms();
+        _response.send(state);
         _response.end();
     });
 
-    app.get('/queuesong/:index', (_request, _response) => {
-        var queueSong = playListRootDir + playList[parseInt(_request.params.index)];
-        console.log("queueing song -> " + queueSong);
-        // this adds it to the bottom of the playList & queues it
-        execFile("xmms", ['-Q', queueSong]);
-        state.queueSong = parseInt(_request.params.index);     
-        sendState();
+    app.get('/getbbplaylist', (_request, _response) => {
+        console.log("getbbplaylist -> " + playList.length);
+        
+        _response.send(playList);
+        _response.end();
     });
-
-    app.get('/playsong/:index', (_request, _response) => {
-        execFile("qxmms", ['jump', parseInt(_request.params.index) + 1]);
-        state.paused = false;
+    
+    app.get('/', (_request, _response) => {
+        _response.render('index');
+        _response.end();
     });
 
     app.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
@@ -110,32 +111,47 @@ function setupExpress() {
                 sendState();
             break;
         } //switch (_request.url) {
+
+    _response.end();
+    }); // app.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
+
+    app.get('/playsong/:index', (_request, _response) => { 
+        execFile("qxmms",['jump', parseInt(_request.params.index) + 1]);
+        state.paused = false;
+        _response.end(); 
+    });
+
+    app.get('/setvolume/:level', (_request,_response) => {
+        if (state.volume !=  parseInt(_request.params.level)) {
+            console.log("setting volume -> " + _request.params.level);
+
+            state.volume =  parseInt(_request.params.level);
+            execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%,' + state.volume + '%']);
+            sendState(_request.ip); // dont send volume back to client who sent it
+            }
+        _response.end();
+    });
+
+    app.get('/queuesong/:index', (_request, _response) => {
+        console.log("queueing song -> " + _request.params.index);
+        console.log("fullpath-> " + playListFullPath[_request.params.index]);
+
+        // this adds it to the bottom of the playList & queues it
+        execFile("xmms", ['-Q', playListFullPath[_request.params.index]]);
+        state.queueSong = parseInt(_request.params.index);
+        sendState();
+        _response.end();
     });
 
     // xmms new song playing...this request came from xmms
     app.get('/newsong/*', (_request, _response) => {
-        var songname = decodeURIComponent(_request.url.split(playListRootDir)[1]);
-        console.log("new song -> " + songname + " index -> " + getSongIndex(songname));
-
-        state.currentlyPlaying = getSongIndex(songname);
+        queryXmms();
         sendState();
-    });
-
-    app.get('/getbbstate', (_request, _response) => {
-        state.currentlyPlaying = parseInt(execFileSync('qxmms', ['-p'])) - 1;
-        state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-        state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
-        state.playList      = playList;
-        
-        _response.send(state);
-        delete state.playList;
+        _response.end();
     });
 } // function setupExpress() {
 
 function sendState(_dontSendTo) {
-    state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-    state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
-    
     for (var i = 0; i < clientList.length; i++) 
         if (clientList[i].remoteAddress == _dontSendTo) {
             console.log("not sending state to -> " + _dontSendTo); // dont send volume back to client that changed it
@@ -144,6 +160,8 @@ function sendState(_dontSendTo) {
                     clientList[i].send(JSON.stringify({msg: "state", data: state}));
             }
             
+    console.dir(state);
+
     state.queueSong = -1;
 } // function sendState(_dontSendTo) {
 
@@ -162,21 +180,18 @@ function setupWebsocket() {
     }); // var wsServer = new wsServer({
 
     wsServer.on('connect', (_connection) => {
-        console.log("new connection from -> " + _connection.remoteAddress);
+        console.log("websocket new connection from -> " + _connection.remoteAddress + " sending playlist -> " + playList.length + " songs");
         clientList.push(_connection);
+        _connection.send( JSON.stringify({   msg: "playList",data: JSON.stringify({'playList': playList }) }));
     });
 
     wsServer.on('request', (_request) => {
-        console.log("Received request -> " + _request.url);
-
         var connection      = _request.accept('winamp', _request.origin);
-        state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-        state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
 
+        console.log("websocket request from -> " + _request.remoteAddress + " sending state");
         console.dir(state)
-        connection.send(JSON.stringify({ msg: "state", data: state }));
-        connection.send(JSON.stringify({ msg: "playList", data: JSON.stringify({'playList': playList}) 
-        }));
+        
+        connection.send( JSON.stringify({   msg: "state", data: state }));
     }); // wsServer.on('request', (_request) => {
 
     wsServer.on('close', (_connection) => {
@@ -190,14 +205,6 @@ function setupWebsocket() {
 
     console.log("websocket listening on port " + wsPort);
 } // function setupWebsocket() {
-
-function getSongIndex(_songname) {
-    for (var i = 0; i < playList.length; i++)
-        if (_songname == playList[i])
-            return i;
-
-    console.log("ERROR - could not find index for -> " + _songname);
-} // function getSongIndex(_songname) {
 
 function getplayList() {
     /* xmms playList file looks like this
@@ -216,10 +223,19 @@ function getplayList() {
     playList.length--; // the last line is a cr
 
     playList.forEach((_entry, _index) => {
-        playList[_index] = playList[_index].split(playListRootDir)[1];
+        playList[_index] = getSongTitle(_entry.split(playListRootDir)[1]);
+        playListFullPath[_index] = playListRootDir + _entry.split(playListRootDir)[1];
     });
 
     console.log("found " + playList.length + " entries")
 } // function getplayList() {
+
+function getSongTitle(_song) {
+    // /a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
+    // remove dir/ from front of string &
+    var result = _song.replace(/^\/[a-z]\//i, "");
+
+    return result.replace(/\.mp3/i, ""); // and the .mp3 at the end
+}
 
 module.exports = app;
