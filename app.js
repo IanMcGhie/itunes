@@ -1,8 +1,9 @@
 "use strict";
-// xmms perferences...general plugins...
-// song change plugin...
-// set command to
-// lynx --dump http://winamp:3000/newsong/%f
+// 1. you need qxmms for this to work
+// 2. xmms perferences...general plugins...
+//    song change plugin...
+//    set command to
+//    lynx --dump http://winamp:3000/newsong/%f
 const pug               = require('pug');
 const http              = require('http');
 const fs                = require("fs");
@@ -45,7 +46,7 @@ function queryXmms() {
     
     state.currentlyPlaying = playListFullPath.indexOf(songFullPath);
     state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-    state.timeRemaining = state.duration - parseInt(execFileSync('qxmms', ['-nS']));
+    state.timeRemaining = parseInt(execFileSync('qxmms', ['-nS']));
 }
 
 function setupExpress() {
@@ -116,9 +117,14 @@ function setupExpress() {
     }); // app.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
 
     app.get('/playsong/:index', (_request, _response) => { 
-        execFile("qxmms",['jump', parseInt(_request.params.index) + 1]);
-        state.paused = false;
-        _response.end(); 
+        var index = _request.params.index;
+        
+        if (index >= 0) {  // if index is -1...dont change the state
+            execFile("qxmms",['jump', parseInt(index) + 1]);
+            state.paused = false;
+            sendState();
+            _response.end(); 
+        }
     });
 
     app.get('/setvolume/:level', (_request,_response) => {
@@ -145,24 +151,24 @@ function setupExpress() {
 
     // xmms new song playing...this request came from xmms
     app.get('/newsong/*', (_request, _response) => {
-        queryXmms();
         sendState();
         _response.end();
     });
 } // function setupExpress() {
 
 function sendState(_dontSendTo) {
+    queryXmms();
+
     for (var i = 0; i < clientList.length; i++) 
         if (clientList[i].remoteAddress == _dontSendTo) {
             console.log("not sending state to -> " + _dontSendTo); // dont send volume back to client that changed it
             } else {
                     console.log("Sending state to -> " + clientList[i].remoteAddress);
+                    console.dir(state);
                     clientList[i].send(JSON.stringify({msg: "state", data: state}));
             }
             
-    console.dir(state);
-
-    state.queueSong = -1;
+    state.queueSong = -1; // reset queuesong...only show popup once
 } // function sendState(_dontSendTo) {
 
 function setupWebsocket() {
@@ -190,7 +196,7 @@ function setupWebsocket() {
 
         console.log("websocket request from -> " + _request.remoteAddress + " sending state");
         console.dir(state)
-        
+        queryXmms();
         connection.send( JSON.stringify({   msg: "state", data: state }));
     }); // wsServer.on('request', (_request) => {
 
@@ -227,7 +233,7 @@ function getplayList() {
         playListFullPath[_index] = playListRootDir + _entry.split(playListRootDir)[1];
     });
 
-    console.log("found " + playList.length + " entries")
+    console.log("found " + playList.length + " songs in playList")
 } // function getplayList() {
 
 function getSongTitle(_song) {

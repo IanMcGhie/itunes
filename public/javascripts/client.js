@@ -10,6 +10,7 @@ $(document).ready(function() {
     var isFirefox = typeof InstallTrigger !== 'undefined';
     var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
 
+    // prevent cr from sending form submit
     $(window).keydown(function(event) {
     if (event.keyCode == 13) {
         event.preventDefault();
@@ -69,8 +70,8 @@ function getBBState(_getWhat) {
                     state = _state;
                     updateUI();
                 });
-            },150); 
-    }
+            },400); // wait for xmms ro respond with new state
+    } // switch (_getWhat) {
 }
 
 function getSongSelectedIndex() {
@@ -80,13 +81,13 @@ function getSongSelectedIndex() {
 // timer for progress bar & song duration display
 function setupTimer() {
     setInterval(function() {
-        if (!state.paused && (state.timeRemaining >= 0)) {
-            state.timeRemaining--
+        if (!state.paused) {
+            state.timeRemaining++
             
-            var margin = 230 - ((state.duration - state.timeRemaining) / state.duration) * 375;
+            var margin = parseInt((state.timeRemaining / state.duration) * 375) - 225;
 
-            $("#progressbar").css("right", margin);
-            $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
+            $("#progressbar").css("left", margin);
+            $("#timeremaining").text('-' + (state.duration - state.timeRemaining).toString().toMMSS());
         }
     }, 1000);
 } // function setupTimer(){
@@ -115,24 +116,46 @@ function setupVolumeControl() {
 
         // set volume here...once
         // the server won't return a response here
-        // so we dont set it over & over...
+        // so we dont set it over and over...
         $("#volume").slider("value",state.volume);
         $.get("setvolume/" + state.volume);
     }) // $("#winamp,#volume,#timeremaining,#pause,#prev,#next,#shuffle").on("wheel", function(_event) {
 } // function setupVolumeControl() {
  
 function setupMouseEvents() {
-    $("#prev,#next,#shuffle,#pause,#winamp,#timeremaining").click(function() { 
-        $.get((this).id, function () {
-            if (isBlackBerry)
-                getBBState("getbbstate");
+    $("#pause").on("click", function () {
+        if (isBlackBerry)
+            state.paused = !state.paused; // set pause here...too much latency from server req
 
-        });
+        $.get((this).id);
+    })
+
+    $("#winamp").on("click", function () {
+        if (isBlackBerry)
+            getBBState("getbbstate");
+    })
+
+    $("#prev,#next,#shuffle,#timeremaining").click(function() { 
+        if (isBlackBerry)
+            getBBState("getbbstate");
+
+        $.get((this).id); 
      });
 
-    $("#queuesong,#playsong").click(function() {
-        if (playList.indexOf($("#playlist").find("option:selected").val()) >= 0) // if we can find the index for song
-            $.get((this).id + "/" + playList.indexOf($("#searchinput").val())); 
+    $("#queuesong").click(function() {
+        var index = playList.indexOf($("#searchinput").val());
+
+        if (isBlackBerry){
+            state.queueSong = index;
+            updateUI();
+        }
+    
+        $.get((this).id + "/" + index); //this will return -1 if it cant find the song
+    });
+
+    $("#playsong").click(function() {
+        if (playList.indexOf($("#searchinput").val()) >= 0) // if we can find the index for song
+            $.get((this).id + "/" + playList.indexOf($("#searchinput").val())); //this will return -1 if it cant find the song
     });
     
     $("#playlist").dblclick(function() {
@@ -183,19 +206,17 @@ function setupBodyKBEvents() {
     $("body").keyup(function(_event) {
           switch (_event.which) {
             case 90: // z
-                if (isBlackBerry) {
-                        $.get("prev");
+                $.get("prev");
+                
+                if (isBlackBerry) 
                         getBBState("getbbstate");
-                    } else
-                        $.get("prev");
             break;
 
             case 66: // b
-                if (isBlackBerry) {
-                        $.get("next");
+                $.get("next");
+
+                if (isBlackBerry)
                         getBBState("getbbstate");
-                    } else
-                       $.get("next");
             break;
 
             case 79: // o
@@ -285,13 +306,15 @@ function updateUI() {
                 $("#shuffleenabled").css("visibility", "hidden");
 
     if (state.queueSong >= 0) {
+        if (isBlackBerry)
+            $("#dialog").css("left", "0px");
+
         $("#dialog").css("display", "inline-block");
         $("#dialog").html(playList[state.queueSong] + " queued.");
         $("#dialog").hide("drop", { direction: "down" }, 5000);
 
         state.queueSong = -1;
     }
-
 } // function updateUI() {
 
 function setupPlayList() {
@@ -320,6 +343,7 @@ function setupWebsocket() {
         switch (message) {
             case "state":
                 state =  jsonData;
+                console.dir(state);
             break;
 
             case "playList":
@@ -331,8 +355,6 @@ function setupWebsocket() {
             break;
         }//switch (message) {
         
-    console.dir(state);
-
     updateUI();
     } //   client.onmessage = function(_response) {
 } 
