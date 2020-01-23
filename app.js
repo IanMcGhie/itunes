@@ -34,14 +34,16 @@ var state = {
     paused: false
 };
 
+queryXmms();
 getplayList();
 setupExpress();
 setupWebsocket();
-queryXmms();
 
 execFile('xmms', ['-Son','-p']); // turn shuffle on / play even if paused
 
 function queryXmms() {
+    console.log("queryXmms()");
+
     var songFullPath = execFileSync('qxmms',['-f']).toString().replace(/^\/\//,"").trim(); // path has two extra // at the begining & a cr at the end
     
     state.currentlyPlaying = playListFullPath.indexOf(songFullPath);
@@ -71,9 +73,11 @@ function setupExpress() {
 
     app.get('/getbbstate', (_request, _response) => {
         console.log("getbbstate");
-        console.dir(state)
 
         queryXmms();
+
+        console.dir(state)
+
         _response.send(state);
         _response.end();
     });
@@ -195,8 +199,11 @@ function setupWebsocket() {
         var connection      = _request.accept('winamp', _request.origin);
 
         console.log("websocket request from -> " + _request.remoteAddress + " sending state");
-        console.dir(state)
+
         queryXmms();
+
+        console.dir(state)
+
         connection.send( JSON.stringify({   msg: "state", data: state }));
     }); // wsServer.on('request', (_request) => {
 
@@ -220,8 +227,6 @@ function getplayList() {
     File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
-    console.log("reading playList -> " + playListFile);
-    
     playList = fs.readFileSync(playListFile, "utf8").split("\n");
 
     playList.shift(); // removes [playList] 
@@ -233,7 +238,7 @@ function getplayList() {
         playListFullPath[_index] = playListRootDir + _entry.split(playListRootDir)[1];
     });
 
-    console.log("found " + playList.length + " songs in playList")
+    console.log(playList.length + " songs in playList")
 } // function getplayList() {
 
 function getSongTitle(_song) {

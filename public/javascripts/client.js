@@ -439,13 +439,14 @@ $( "select" )
                 _container.style.maxWidth = "500px";
             
             resultrow = 0;
-/*      You can use the following snippet to display autocomplete above the input field if there is not enough space for it.
+/*      You can use the following snippet to display autocomplete above the 
+input field if there is not enough space for it.*/
       if (_maxHeight < 100) {
                 _container.style.top = "";
                 _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
                 _container.style.maxHeight = "140px";
             } // if (maxHeight < 100) {
-                */
+                
         } // customize: function(input, inputRect, container, maxHeight) {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {
