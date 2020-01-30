@@ -3,18 +3,20 @@
     src: url("/fonts/Hack-Regular.ttf");
     font-family: "DS-Regular";
     src: url("/fonts/digital.ttf");
+    font-size: 22px;
 }
 
 body {
     color: #0d0;
     background: url(/images/space.png);
     text-align: center;
-    font-family: "Hack-Regular";
-    font-size: 22px;
+    font-family: "Hack";
+    font-size: 18px;    
+
 }
 
 a {
-    color: #fff;
+    color: #0d0;
 }
 
 option {
@@ -26,9 +28,20 @@ strong {
     color: #fede18;
 }
 
+.chart-container {
+    width: 100%;
+    display: inline-block;
+    text-align: center;
+}
+
+#myChart {
+     
+     background-color: transparent;
+    
+}
+
 #songtitle {
-    font-size: 22px;
-    height: 75px;
+    height: 50px;
 }
 
 #winamp {
@@ -45,7 +58,7 @@ strong {
 
 #volume {
     position: relative;
-    bottom: 155px;
+    bottom: 159px;
     left: 45px;
     background-color: #d37824;
     width: 95px;
@@ -60,8 +73,8 @@ strong {
 
 #shuffleenabled {
     position: relative;
-    bottom: 100px;
-    right: 22px;
+    bottom: 104px;
+    right: 27px;
 }
 
 .ui-slider .ui-slider-handle {
@@ -101,25 +114,27 @@ strong {
 
 #playlist {
     font: inherit;
+color: inherit;
 }
+
 
 #searchinput {
     margin-bottom: 25px;
     font: inherit;
     text-align: left;
-    border: 1px solid #0f0;
     background-color: #000;
     color: inherit;
     width: 65%;
+    border: 1px solid #888;
 }
 
 #playsong,
 #queuesong {
-    font: inherit;
-    margin: 5px 5px 5px 5px;
-    border: 1px solid #0f0;
+    font: inherit; 
+    padding: 2px 5px 2px 5px;
+    border: 1px solid #888;
     background-color: #000;
-    color: #0f0;
+    color: inherit;
 }
 
 [id*="resultrow_"]  {

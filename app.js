@@ -3,7 +3,7 @@
 // 2. xmms perferences...general plugins...
 //    song change plugin...
 //    set command to
-//    lynx --dump http://winamp:3000/newsong/%f
+//    lynx --dump "http://winamp:3000/newsong/"%f" &
 const pug               = require('pug');
 const http              = require('http');
 const fs                = require("fs");
@@ -23,6 +23,7 @@ const {
 var playList    = [];
 var playListFullPath = [];
 var clientList  = [];
+var songsPlayed = 0;
 
 var state = {
     timeRemaining: 0,
@@ -31,7 +32,10 @@ var state = {
     shuffle: true,
     volume: 35,
     queueSong: -1,
-    paused: false
+    paused: false,
+    shuffleDist: [],
+    songsPlayed: 0,
+    alphaIndex: []
 };
 
 queryXmms();
@@ -46,9 +50,9 @@ function queryXmms() {
 
     var songFullPath = execFileSync('qxmms',['-f']).toString().replace(/^\/\//,"").trim(); // path has two extra // at the begining & a cr at the end
     
-    state.currentlyPlaying = playListFullPath.indexOf(songFullPath);
-    state.duration      = parseInt(execFileSync('qxmms', ['-lS']));
-    state.timeRemaining = parseInt(execFileSync('qxmms', ['-nS']));
+    state.currentlyPlaying  = playListFullPath.indexOf(songFullPath);
+    state.duration          = parseInt(execFileSync('qxmms', ['-lS']));
+    state.timeRemaining     = state.duration - execFileSync('qxmms', ['-nS']);
 }
 
 function setupExpress() {
@@ -155,14 +159,19 @@ function setupExpress() {
 
     // xmms new song playing...this request came from xmms
     app.get('/newsong/*', (_request, _response) => {
+        var songFullPath = execFileSync('qxmms',['-f']).toString().replace(/^\/\//,"").trim(); // path has two extra // at the begining & a cr at the end
+        var index = playListFullPath.indexOf(songFullPath);
+        state.shuffleDist[index]++;
+        state.songsPlayed++;
         sendState();
+
         _response.end();
     });
 } // function setupExpress() {
 
 function sendState(_dontSendTo) {
     queryXmms();
-
+    
     for (var i = 0; i < clientList.length; i++) 
         if (clientList[i].remoteAddress == _dontSendTo) {
             console.log("not sending state to -> " + _dontSendTo); // dont send volume back to client that changed it
@@ -193,6 +202,7 @@ function setupWebsocket() {
         console.log("websocket new connection from -> " + _connection.remoteAddress + " sending playlist -> " + playList.length + " songs");
         clientList.push(_connection);
         _connection.send( JSON.stringify({   msg: "playList",data: JSON.stringify({'playList': playList }) }));
+        _connection.send( JSON.stringify({   msg: "playListFullPath",data: JSON.stringify({'playListFullPath': playListFullPath }) }));
     });
 
     wsServer.on('request', (_request) => {
@@ -220,6 +230,8 @@ function setupWebsocket() {
 } // function setupWebsocket() {
 
 function getplayList() {
+    var i = 0;
+    var lastLetter = 65;
     /* xmms playList file looks like this
     [playList]
     NumberOfEntries=5297
@@ -236,7 +248,12 @@ function getplayList() {
     playList.forEach((_entry, _index) => {
         playList[_index] = getSongTitle(_entry.split(playListRootDir)[1]);
         playListFullPath[_index] = playListRootDir + _entry.split(playListRootDir)[1];
-    });
+        state.shuffleDist[_index] = 0;
+
+        if (playListFullPath[_index].match(/\/[a-z]\//g) != null) 
+            state.alphaIndex[_index] = playListFullPath[_index].match(/\/[a-z]\//g).toString().toUpperCase().substr(1,1);
+
+        });
 
     console.log(playList.length + " songs in playList")
 } // function getplayList() {

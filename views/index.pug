@@ -11,10 +11,14 @@ html
     script(src='javascripts/jquery-1.12.4.js')
     script(src='javascripts/jquery-ui.js')
     script(src='javascripts/autocomplete/autocomplete.js')
-    script(src='javascripts/client.js')    
+    script(src='javascripts/client.js') 
+    script(src='javascripts/Chart.js') 
 body
 <title id="title"></title>
 <div id="songtitle"></div>
+<div class="chart-container">
+    <canvas id="myChart"></canvas>
+</div>
 <div id="player">
         <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
         <div id="timeremaining"></div>
@@ -36,5 +40,5 @@ body
     <button id="queuesong">Queue</button>
     <select id="playlist" size="20"></select>
 </div>
-<div id="listen"><a href>Listen here</a></div>
-<div id="dialog">dialog</div>     
+<div id="dialog">dialog</div>
+<div id="listen">Listen</div>

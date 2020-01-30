@@ -1,14 +1,15 @@
 "use strict";
-var state = { volume: 0, timeRemaining: 0};
+var state = { volume: 0, timeRemaining: 0,shuffleDist: []};
 var playList = [];
 var websocketPort = 6502;
 var serverUrl   = "ws://winamp:" + websocketPort;
-var isBlackBerry = false;
+var itsTheBlackerry = false;
 var resultrow = 0;
+var myChart;
 
 $(document).ready(function() {
-    var isFirefox = typeof InstallTrigger !== 'undefined';
-    var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+    var itsNotFirefox = typeof InstallTrigger === 'undefined';
+    var itsNotChrome = !(!!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime));
 
     // prevent cr from sending form submit
     $(window).keydown(function(event) {
@@ -18,18 +19,12 @@ $(document).ready(function() {
         }
     });    
 
-    isBlackBerry = !isFirefox && !isChrome;
+    itsTheBlackerry = itsNotFirefox && itsNotChrome;
 
-    if (isBlackBerry) {
-        $("body").css("width","500px");
-        $("#progressbar").css("display","absolute");
-        $("#searchinput").css("width","300%");
-        $("#winamp").css("margin-top","50px");
-        
-        getBBState("getbbplaylist"); // my blackberry foan
-        getBBState("getbbstate");    // doesnt understand ajax....or newer js
-        } else
-            setupWebsocket();
+    if (itsTheBlackerry) 
+        setupBB();
+            else
+                setupWebsocket();
             
     setupBodyKBEvents();
     setupSearch();
@@ -37,6 +32,7 @@ $(document).ready(function() {
     setupMouseEvents();
     setupVolumeControl();
     setupTimer();
+    setupChart();
 }); // $(document).ready(() => {
 
 String.prototype.toMMSS = function() {
@@ -82,13 +78,15 @@ function getSongSelectedIndex() {
 function setupTimer() {
     setInterval(function() {
         if (!state.paused) {
-            state.timeRemaining++
+            state.timeRemaining--
             
-            var margin = parseInt((state.timeRemaining / state.duration) * 375) - 225;
+            var margin = -(state.timeRemaining / state.duration) * 375 + 150;
 
             $("#progressbar").css("left", margin);
-            $("#timeremaining").text('-' + (state.duration - state.timeRemaining).toString().toMMSS());
+            $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
         }
+
+//         $.get("next");
     }, 1000);
 } // function setupTimer(){
 
@@ -124,19 +122,19 @@ function setupVolumeControl() {
  
 function setupMouseEvents() {
     $("#pause").on("click", function () {
-        if (isBlackBerry)
+        if (itsTheBlackerry)
             state.paused = !state.paused; // set pause here...too much latency from server req
 
         $.get((this).id);
     })
 
     $("#winamp").on("click", function () {
-        if (isBlackBerry)
+        if (itsTheBlackerry)
             getBBState("getbbstate");
     })
 
     $("#prev,#next,#shuffle,#timeremaining").click(function() { 
-        if (isBlackBerry)
+        if (itsTheBlackerry)
             getBBState("getbbstate");
 
         $.get((this).id); 
@@ -145,7 +143,7 @@ function setupMouseEvents() {
     $("#queuesong").click(function() {
         var index = playList.indexOf($("#searchinput").val());
 
-        if (isBlackBerry){
+        if (itsTheBlackerry){
             state.queueSong = index;
             updateUI();
         }
@@ -174,7 +172,7 @@ function setupMouseEvents() {
 function setupPlayListKBEvents() {
     $("#playlist").focusin(function () {
         $("body").off("keyup");
-        $("#playlist").css("border", "2px solid #5f5");
+        $("#playlist").css("border", "1px solid #0d0");
 
         $("#playlist").keyup(function (_event)  {
             console.log("key up -> " + _event.which);
@@ -196,7 +194,7 @@ function setupPlayListKBEvents() {
 
     $("#playlist").focusout(function() {
         $("#playlist").off("keyup");
-        $("#playlist").css("border", "1px solid #0f0");
+        $("#playlist").css("border", "1px solid #888");
         
         setupBodyKBEvents();
     });
@@ -208,15 +206,15 @@ function setupBodyKBEvents() {
             case 90: // z
                 $.get("prev");
                 
-                if (isBlackBerry) 
-                        getBBState("getbbstate");
+                if (itsTheBlackerry) 
+                    getBBState("getbbstate");
             break;
 
             case 66: // b
                 $.get("next");
 
-                if (isBlackBerry)
-                        getBBState("getbbstate");
+                if (itsTheBlackerry)
+                   getBBState("getbbstate");
             break;
 
             case 79: // o
@@ -243,7 +241,7 @@ function setupBodyKBEvents() {
             case 83: // s
                 $.get("shuffle");
 
-                if (isBlackBerry)
+                if (itsTheBlackerry)
                     getBBState("getbbstate")
             break;
 
@@ -256,7 +254,7 @@ function setupBodyKBEvents() {
 
 function setupSearch() {
     $("#searchinput").focusin(function() {
-        $("#searchinput").css("border", "2px solid #5f5");
+        $("#searchinput").css("border", "1px solid #0d0");
         $("body").off("keyup");
         $("#searchinput").val("");
 
@@ -277,7 +275,7 @@ function setupSearch() {
     $("#searchinput").focusout(function() {
         var index = playList.indexOf($("#searchinput").val());
         
-        $("#searchinput").css("border", "1px solid #0f0");
+        $("#searchinput").css("border", "1px solid #888");
         $("#searchinput").off("keyup");
 
         if (index >= 0)
@@ -291,7 +289,7 @@ function setupSearch() {
 
 function updateUI() {
     $("#title").text(playList[state.currentlyPlaying]);
-    $("#songtitle").text(playList[state.currentlyPlaying] + " (" + parseInt(state.duration).toString().toMMSS() + ")");
+    $("#songtitle").text(state.songsPlayed + ". " + playList[state.currentlyPlaying] + " (" + parseInt(state.duration).toString().toMMSS() + ")");
     $("#searchinput").val(playList[state.currentlyPlaying]);
 
     if ($("#volume").slider("value") != state.volume)
@@ -306,7 +304,7 @@ function updateUI() {
                 $("#shuffleenabled").css("visibility", "hidden");
 
     if (state.queueSong >= 0) {
-        if (isBlackBerry)
+        if (itsTheBlackerry)
             $("#dialog").css("left", "0px");
 
         $("#dialog").css("display", "inline-block");
@@ -315,6 +313,8 @@ function updateUI() {
 
         state.queueSong = -1;
     }
+
+    setupChart();
 } // function updateUI() {
 
 function setupPlayList() {
@@ -327,6 +327,16 @@ function setupPlayList() {
         option.text = playList[i];
         select.add(option);
     }
+}
+
+function setupBB() {
+    $("body").css("width","500px");
+    $("#progressbar").css("display","absolute");
+    $("#searchinput").css("width","300%");
+    $("#winamp").css("margin-top","50px");
+
+    getBBState("getbbplaylist"); // my blackberry foan
+    getBBState("getbbstate");    // doesnt understand ajax....or newer js
 }
 
 function setupWebsocket() {
@@ -354,7 +364,7 @@ function setupWebsocket() {
                 setupSearchAutoComplete();
             break;
         }//switch (message) {
-        
+
     updateUI();
     } //   client.onmessage = function(_response) {
 } 
@@ -368,7 +378,7 @@ function setupSearchAutoComplete() {
     console.log("setting up AutoComplete");
     var minLength = 2;
 
-    if (isBlackBerry)
+    if (itsTheBlackerry)
         minLength = 5;
     /*
     $("# ").change(function() {
@@ -435,7 +445,7 @@ $( "select" )
         },
         emptyMsg: "MP3 not found",
         customize: function(_input, _inputRect, _container, _maxHeight) {
-            if (isBlackBerry)
+            if (itsTheBlackerry)
                 _container.style.maxWidth = "500px";
             
             resultrow = 0;
@@ -450,3 +460,129 @@ input field if there is not enough space for it.*/
         } // customize: function(input, inputRect, container, maxHeight) {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {
+
+function setupChart() {
+    var lastLetter = "@";
+    var lastIndex = 0;
+
+    var colors = [];
+    for (var i = 0;i < state.shuffleDist.length;i++) {
+        if (state.currentlyPlaying == i)
+            colors[i] = "#fff"
+                else
+                    colors[i] = "#080"
+    }
+   
+    if (myChart)
+        myChart.destroy();
+        
+        var ctx = $("#myChart");
+        myChart = new Chart(ctx, {
+
+
+            type: 'bar',
+            data: {
+                labels: state.alphaIndex,
+                datasets: [{
+                    label: 'Played',
+                    data:  state.shuffleDist,
+                    backgroundColor: colors,
+                    barThickness: 1,
+                }
+      /*      , {
+                        type: 'line',
+          
+              
+                    label: 'Cubic interpolation (monotone)',
+                    data:  state.shuffleDist,
+                    borderColor: '#f00',
+                    backgroundColor: '#f00',
+                    borderWidth: 0,
+                    fill: false,
+                    pointRadius: 0,
+                    lineTension: 111
+                 //   cubicInterpolationMode: 1
+                }*/]
+                },
+            
+            options: {
+                animation: {
+                    duration: 0
+                },
+                legend: {
+                    position: 'bottom',
+                    display: false
+                },                
+                responsive: true,
+                aspectRatio: 18,  
+                tooltips: {
+                    titleFontColor: "#0d0",
+                    titleFontSize: 18,
+                    bodyFontSize: 18,
+                    bodyFontColor: "#0d0",
+                    displayColors: false,
+                    callbacks: {
+                        title: function(_tooltipItem, _data) {
+                            if (state.shuffleDist[_tooltipItem[0].index] > 0)
+                                return playList[_tooltipItem[0].index];
+                    },
+                        label: function(_tooltipItem, data) {
+                            if (state.shuffleDist[_tooltipItem.index] == 0)
+                                return;
+                            
+                            if ((_tooltipItem != null) && (data[_tooltipItem.datasetIndex] != null))
+                                 if (data[_tooltipItem.datasetIndex].label.length  > 1) 
+                                    return _tooltipItem.xLabel;
+
+                            return "Played: " +  state.shuffleDist[_tooltipItem.index];
+                        } // label: function(tooltipItem, data) {
+                    }, // callbacks: {
+                    mode: 'nearest',
+                    intersect: false
+                },
+                hover:{
+                    mode: 'nearest',
+                    intersect: false
+                },
+                title: {
+                    display: false,
+                     text: state.songsPlayed + " Played",
+                },
+
+                scales: {  
+              
+                    xAxes: [{
+     //                       scaleLabel: {
+//                                padding: 75,
+   //                             labelString: state.songsPlayed + " Played",display: true,
+ //                           },
+
+                        ticks: {
+                            fontColor: "#0d0",
+                            fontFamily: "hack",
+                            fontSize: 18,
+                            maxRotation: 0,
+                          //  padding: -35,
+                            autoSkip:  false,
+                            callback: function(_value, _index, _values) {
+                                if  ((_value != null) && (_value > lastLetter) && (_index - lastIndex > 40)) {
+                                    lastLetter = String.fromCharCode(_value.charCodeAt(0));
+                                    lastIndex = _index;
+                                    return _value;
+                                } 
+                            }
+                        } // ticks: {
+                    }], // xAxes: [{
+                yAxes: [{
+                    ticks: {
+                        min: 0,
+                            stepSize: 1,
+                            callback: function(_value, _index, _values) {
+                               // return _value;
+                        }
+                    }
+                }] // yAxes: [{
+            } // scales: { 
+        } // options: {
+    }); //  myChart = new Chart(ctx, {
+}
