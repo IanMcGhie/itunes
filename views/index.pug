@@ -12,20 +12,15 @@ html
     script(src='javascripts/jquery-ui.js')
     script(src='javascripts/autocomplete/autocomplete.js')
     script(src='javascripts/client.js') 
-    script(src='javascripts/Chart.js') 
+    script(src='javascripts/Chart.js')
 body
 <title id="title"></title>
 <div id="songtitle"></div>
-<div class="chart-container">
-    <canvas id="myChart"></canvas>
-</div>
-<div id="player">
-        <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
-        <div id="timeremaining"></div>
-        <div id="volume" class="ui-slider ui-slider-handle ui-corner-all ui-slider-horizontal ui-widget ui-widget-content"></div>
-        <img id="progressbar" src="images/progressbar.png">
-        <img id="shuffleenabled" src="images/shuffle.png">
-</div>
+<img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
+<div id="timeremaining"></div>
+<div id="volume" class="slider"></div>
+<img id="progressbar" src="images/progressbar.png">
+<img id="shuffleenabled" src="images/shuffle.png">
 <map id="winampmap" name="winampmap">
     <area id="prev" shape="rect" coords="28,150,65,180">
     <area id="pause" shape="rect" coords="107,150,145,180">
@@ -33,12 +28,13 @@ body
     <area id="shuffle" shape="rect" coords="280,150,359,176">
 </map>
 <div id="search">
-    <form id="autocompleteform" autocomplete="off"> 
-        <input type="text" id="searchinput" placeholder="Mp3 Search"  />
-    </form>
+    <input type="text" id="searchinput" placeholder="Mp3 Search"  />
     <button id="playsong">Play</button>
     <button id="queuesong">Queue</button>
-    <select id="playlist" size="20"></select>
+    <select id="playlist" size=20></select>
 </div>
 <div id="dialog">dialog</div>
-<div id="listen">Listen</div>
+<div class="chart-container">
+    <canvas id="chart"></canvas>
+</div>
+<a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a>

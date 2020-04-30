@@ -3,16 +3,17 @@
     src: url("/fonts/Hack-Regular.ttf");
     font-family: "DS-Regular";
     src: url("/fonts/digital.ttf");
-    font-size: 22px;
+    
 }
 
 body {
-    color: #0d0;
+    /* color: #0d0; */
     background: url(/images/space.png);
     text-align: center;
     font-family: "Hack";
-    font-size: 18px;    
-
+    font-size: 12px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 a {
@@ -21,11 +22,11 @@ a {
 
 option {
     background: #000;
-    color: #0d0;
+ 
 }
 
 strong {
-    color: #fede18;
+    color: #fd1;
 }
 
 .chart-container {
@@ -33,34 +34,48 @@ strong {
     display: inline-block;
     text-align: center;
 }
+#chartjs-tooltip {
+    margin-top: -50px;
+    font-family: "Hack";
+    font-size: 22px;
+    opacity: 1;
+    position: absolute;
+    background: rgba(0, 0, 0, .7);
+    color: #0d0;
+    border-radius: 3px;
+    -webkit-transition: all .1s ease;
+    transition: all .1s ease;
+    pointer-events: none;
+    -webkit-transform: translate(-50%, 0);
+    transform: translate(-50%, 0);
+}
 
-#myChart {
-     
-     background-color: transparent;
-    
+.chartjs-tooltip-key {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 10px;
 }
 
 #songtitle {
-    height: 50px;
-}
-
-#winamp {
-   
+    margin-top: 25px;
+    margin-bottom: 25px;
 }
 
 #timeremaining {
     position: relative;
-    bottom: 172px;
+    bottom: 170px;
     right: 118px;
     font-family: "DS-Regular";
     font-size: 40px;
+    
 }
 
 #volume {
     position: relative;
-    bottom: 159px;
-    left: 45px;
-    background-color: #d37824;
+    bottom: 150px;
+    left: 47px;
+    background-color: #0f0;
     width: 95px;
     height: 3px;
     display: inline-block;
@@ -68,12 +83,14 @@ strong {
 
 #progressbar {
     position: relative;
-    bottom: 130px;
+    bottom: 124px;
+    left: 45px;
+    display: inline;
 }
 
 #shuffleenabled {
     position: relative;
-    bottom: 104px;
+    bottom: 96px;
     right: 27px;
 }
 
@@ -109,22 +126,22 @@ strong {
 #autocompleterow {
     text-align: center;
     font: inherit;
-    margin: 100px 100px 100px 100px;
+
 }
 
 #playlist {
     font: inherit;
-color: inherit;
+    color: inherit;
+    width: 60%;
 }
-
 
 #searchinput {
     margin-bottom: 25px;
+    width: 54%; 
     font: inherit;
     text-align: left;
     background-color: #000;
     color: inherit;
-    width: 65%;
     border: 1px solid #888;
 }
 
@@ -139,18 +156,5 @@ color: inherit;
 
 [id*="resultrow_"]  {
     text-align: left;
-}
-
-/*div.selected {
-    */
-[id*="resultrow_"]
-    background: #fff;
-    color: #0f0;
     cursor: pointer;
-}
-
-
-#formdiv {
-  
-    
 }
