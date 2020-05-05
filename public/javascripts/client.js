@@ -1,12 +1,10 @@
 "use strict";
 // bb doesnt like the const keyword
-var wsPort      = 6502;
-var wsHost      = "winamp";
-var serverUrl   = "ws://" + wsHost + ":" + wsPort;
+var serverUrl   = "ws://winamp:6502";
 var state       = {};
-var chart;
+var playList    = [];
 var itsTheBlackerry = false;
-var playList = [];
+var chart;
 
 $(document).ready(function() {
     var itsNotFirefox = typeof InstallTrigger === 'undefined';
@@ -15,9 +13,9 @@ $(document).ready(function() {
     itsTheBlackerry = itsNotFirefox && itsNotChrome;
 
     if (itsTheBlackerry) 
-        setupBlackerry();
+        setupBlackerry(); // sync ui
             else
-                setupWebSocket();
+                setupWebSocket(); // async ui
             
     setupBodyKBEvents();
     setupPlayListKBEvents();
@@ -47,7 +45,7 @@ function setupClock() {
 }
 
 function setupTicker(_delayMs) {
-    console.log("setupTicker()");
+    console.log("setupTicker(" +  _delayMs + ")");
 
     setInterval(function() {
         if ($("#title").text().length > 0)       
@@ -120,13 +118,14 @@ function setVolume() {
 }
  
 function setupMouseEvents() {
+    /*
     $("#pause").on("click", function () {
         $.get("pause");
 
         if (itsTheBlackerry)
             state.paused = !state.paused; 
     })
-
+*/
     $("#winamp").on("click", function () {
         if (itsTheBlackerry)
             getBBState("getbbstate");
@@ -142,26 +141,35 @@ function setupMouseEvents() {
         setVolume();
     }) // $("#timeremaining,#winamp,#prev,#pause,#next,#shuffleenabled,#progressbar,#volume").on("wheel", function(_event) {
 
-    $("#prev,#next,#shuffle,#timeremaining").click(function() { 
+    $("#prev,#pause,#next,#shuffle,#timeremaining").click(function() { 
         $.get((this).id); 
 
-        if (itsTheBlackerry)
-            getBBState("getbbstate");
-
+        if (itsTheBlackerry && ((this).id == 'pause')) {
+            state.paused = !state.paused; 
+      //      getBBState("getbbstate");
+      updateUI();
+}
      });
 
     $("#queuesong").click(function() {
         if (itsTheBlackerry) {
-            $("#dialog").css("display", "inline-block");
-            $("#dialog").html($("#searchinput").val() + " queued.");
-            $("#dialog").hide("drop", { direction: "down" }, 5000);
+            $("#popupdialog").css("display", "inline-block");
+            $("#popupdialog").html($("#searchinput").val() + " queued.");
+            $("#popupdialog").hide("drop", { direction: "down" }, 10000);
         } 
 
         $.get("queuesong/" + getSearchInputSongIndex());
     });
 
     $("#playsong").click(function() {
-         $.get("playsong/" + getSearchInputSongIndex());
+        if (itsTheBlackerry) {
+            getBBState("playsong");
+             $.getJSON(_getWhat, function(_state) {
+                state = _state;
+                updateUI();
+            });
+               } else
+                    $.get("playsong/" + getSearchInputSongIndex());
     });
     
     $("#playlist").dblclick(function() {
@@ -171,7 +179,7 @@ function setupMouseEvents() {
 
 function setupPlayListKBEvents() {
     $("#playlist").focusin(function () {
-        $("body").off("keyup");
+        $("body").off("keypress");
         $("#playlist").css("border", "1px solid #0d0");
 
         $("#playlist").keyup(function (_event)  {
@@ -200,49 +208,52 @@ function setupPlayListKBEvents() {
 } // function setupPlayListKBEvents(){
 
 function setupBodyKBEvents() {
-    $("body").keyup(function(_event) {
+//   $("body").keyup(function(_event) {
+    $("body").keypress(function(_event) {
+        console.log("keypress -> " + _event.which);
+        
         switch (_event.which) {
-            case 90: // z
+            case 122: // z
                 $.get("prev");
                 
                 if (itsTheBlackerry) 
                     getBBState("getbbstate");
             break;
 
-            case 66: // b
+            case 98: // b
                 $.get("next");
 
                 if (itsTheBlackerry)
                    getBBState("getbbstate");
             break;
 
-            case 79: // o
+            case 111: // o
                 state.volume++;
                 setVolume();
             break;
 
-            case 73: // i
+            case 105: // i
                 state.volume--;
                 setVolume();
             break;
 
-            case 74: // j
+            case 106: // j
                 $("#searchinput").focus();
             break;
 
-            case 67: // c
+            case 99: // c
                 $.get("pause");
                 state.paused = !state.paused;
             break;
 
-            case 83: // s
+            case 115: // s
                 $.get("shuffle");
 
                 if (itsTheBlackerry)
                     getBBState("getbbstate")
             break;
 
-            case 81: // q
+            case 113: // q
                 $.get("queuesong/" + getSearchInputSongIndex());
             break;
         } // switch (_event.which) {
@@ -266,7 +277,12 @@ function updateUI() {
         $("#shuffleenabled").css("visibility", "visible");
             else
                 $("#shuffleenabled").css("visibility", "hidden");
- 
+
+    if (state.paused)
+        $("#ispaused").attr("src","/images/ispaused.png");
+            else
+                $("#ispaused").attr("src","/images/isplaying.png");
+
     if (!itsTheBlackerry)
         setupChart();
 } // function updateUI() {
@@ -302,8 +318,7 @@ function setupBlackerry() {
 
 function setupWebSocket() {
     console.log("setupWebSocket()");
-
-    var client = new WebSocket(serverUrl,"winamp");
+     var client = new WebSocket(serverUrl,"winamp");
 
     client.onmessage = function(_response) {
         console.log("ommessage state received");
@@ -319,9 +334,11 @@ function setupWebSocket() {
         }
 
         if (state.hasOwnProperty('queueSong')) {
-            $("#dialog").css("display", "inline-block");
-            $("#dialog").html(playList[state.queueSong] + " queued.");
-            $("#dialog").hide("drop", { direction: "down" }, 5000);
+            console.log("Queueing song #" + state.queueSong + " -> " + playList[state.queueSong]);
+
+            $("#popupdialog").css("display", "inline-block");
+            $("#popupdialog").html(playList[state.queueSong] + " queued.");
+            $("#popupdialog").hide("drop", { direction: "down" }, 10000);
 
             delete state.queueSong;
         }
@@ -340,19 +357,12 @@ function setupSearchAutoComplete() {
 
     $("#searchinput").focusin(function() {
         $("#searchinput").css("border", "1px solid #0d0");
-        $("body").off("keyup");
         $("#searchinput").val("");
 
+        $("body").off("keypress");
         $("#searchinput").keyup(function(_event) {      
-            switch(_event.which) {
-                case 13:
-                    $("#playlist").focus();
-                break;
-
-                case 27: // esc key
+            if ((_event.which == 13) || (_event.which == 27))
                     $("#searchinput").blur();
-                break;
-            } // switch(_event.which) {
         }); // $("#searchinput").keyup(function(_event) {
     }); // $("#searchinput").focusin(() => {
 
@@ -391,8 +401,8 @@ function setupSearchAutoComplete() {
         },
         render: function(_item, _value) {
           //  console.log("onrender ****")
-            var itemElement     = document.createElement("div");
-            itemElement.id      = "resultrow_";
+            var itemElement = document.createElement("div");
+            itemElement.id  = "resultrow_";
 
             if (charsAllowed(_value)) {
                 var regex = new RegExp(_value, 'gi');
@@ -422,36 +432,41 @@ function setupSearchAutoComplete() {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {
 
-var customTooltips = function(_tooltip) {
+function setupChart() {
+    var chartData    = [];
+
+    console.log("setupChart()");
+
+    var customTooltips = function(_ttModel) {
         var index = -1;
-        var tooltipEl = document.getElementById('chartjs-tooltip');
+        var ttElement = document.getElementById('chartjs-tooltip');
 
-        if (!tooltipEl) {
-            console.log("creating tooltip")
+        if (!ttElement) {
+            console.log("creating tooltip div")
             
-            tooltipEl = document.createElement('div');
-            tooltipEl.id = 'chartjs-tooltip';
-            tooltipEl.innerHTML = '<table></table>';
+            ttElement = document.createElement('div');
+            ttElement.id = 'chartjs-tooltip';
+            ttElement.innerHTML = '<table></table>';
 
-            this._chart.canvas.parentNode.appendChild(tooltipEl);
-        } // if (!tooltipEl) {
+            this._chart.canvas.parentNode.appendChild(ttElement);
+        } // if (!ttElement) {
 
         function getBody(_bodyItem) {
             return _bodyItem.lines;
         }
 
         if (this._active.length == 0) {
-            tooltipEl.style.opacity = 0;
+            ttElement.style.opacity = 0;
             return;
         }
 
         index = this._active[0]._index;
 
         // Hide if no tooltip
-        if (!state.songsPlayed.includes(index) || (index == -1) || (!_tooltip.body)) {
-            tooltipEl.style.opacity = 0;
+        if (!state.songsPlayed.includes(index) || (index == -1) || (!_ttModel.body)) {
+            ttElement.style.opacity = 0;
             return;
-          }
+        }
 
         $("#chart").click(function () {
             $.get("playsong/" + index);
@@ -459,57 +474,62 @@ var customTooltips = function(_tooltip) {
 
         // Set Text
         console.log("tooltip set text")
-        var bodyLines = _tooltip.body.map(getBody);
-        var innerHtml = "<thead>";
+        var bodyLines = _ttModel.body.map(getBody);
+        var innerHtml = "";
+
+    //var ttWidth = parseInt($(ttElement).css("left")); - parseInt($(ttElement).css("right"));// - $(ttElement).css("height");
+    var ttWidth = parseInt($(ttElement).css("left")) + (parseInt($(ttElement).css("width")) / 2);
+    var mouseX = _ttModel.caretX;
+    var ttLeft =  parseInt($(ttElement).css("left"));
+    var ttCentreXMin   = (ttWidth / 2); // far left  min
+    var ttCentreXMax   = ttLeft + (ttWidth / 2); // far right max
+    var dbstr = "false";
+
+    //$(ttElement).css("width",500);
+
+    if (dbstr != "false")
+        if ((mouseX < ttCentreXMax) && (mouseX > ttCentreXMin)) {
+            dbstr = "don't adjust";
+        } else
+            dbstr = "adjust";
 
         // highlight currently playing song
         if (state.songsPlayed[state.songsPlayed.length - 1] == index) {
-            $("#tooltiptitle").css("color", "#fd1");
-            $(tooltipEl).css("color", "#fd1");
+            $(ttElement).css("color", "#fd1");
+            $(ttElement).css("border", "1px solid #fd1");
+            innerHtml += '<tr><th>Currently Playing:</th></tr>';
+            innerHtml += '<tr><th>' + playList[index] + '</th></tr>';
             } else {
-                    $("#tooltiptitle").css("color", "#0d0");
-                    $(tooltipEl).css("color", "#0d0");
+                    $(ttElement).css("color", "#0d0");
+                    $(ttElement).css("border", "1px solid #0d0");
+                    innerHtml += '<tr><th>' + playList[index] + '</th></tr>';
+                    innerHtml += '<tr><td>Played: ' + chartData[index] + '</td></tr>';
+           if (dbstr != "false") {
+                    innerHtml += '<tr><td>windowWidth: ' + window.innerWidth + '</td></tr>';
+                    innerHtml += '<tr><td>ttLeft: ' + parseInt($(ttElement).css("left")) + '</td></tr>';
+                    innerHtml += '<tr><td>ttWidth: ' + ttWidth + '</td></tr>';
+                    innerHtml += '<tr><td>mouseX: ' +  mouseX + '</td></tr>';
+                    innerHtml += '<tr><td>Adjust: ' + dbstr + '</td></tr>';
+                }
+                    innerHtml += '<tr><td>Click to play</td></tr>';
                     }
 
-        innerHtml += '<tr><th id=\"tooltiptitle\">' + playList[index] + '</th></tr>';
-        innerHtml += '</thead><tbody>';
-
-        bodyLines.forEach(function(_body, _i) {
-            var colors = _tooltip.labelColors[_i];
-            var style = 'background:' + colors.backgroundColor;
-            style += '; border-color:' + colors.borderColor;    
-            style += '; border-width: 2px';
-            var span = '<span class="chartjs-tooltip-key" style="' + style + '"></span>';
-            innerHtml += '<tr><td>' + span + _body + '</td></tr>';
-        });
-
-        innerHtml += '</tbody>';
-
-        var tableRoot = tooltipEl.querySelector('table');
+        var tableRoot = ttElement.querySelector('table');
         tableRoot.innerHTML = innerHtml;
 
-        var positionY = this._chart.canvas.offsetTop;
-        var positionX = this._chart.canvas.offsetLeft;
+        ttElement.style.opacity     = 1;
+    //    ttElement.style.left        = ( _ttModel.caretX) + 'px';
+        ttElement.style.left        = (mouseX) + 'px';
+        ttElement.style.fontFamily  = _ttModel._bodyFontFamily;
+        ttElement.style.fontSize    = _ttModel.bodyFontSize + 'px';
+        ttElement.style.fontStyle   = _ttModel._bodyFontStyle;
+    };  // var customTooltips = function(_ttModel) {
 
-        // Display, position, and set styles for font
-        tooltipEl.style.opacity     = 1;
-        tooltipEl.style.left        = positionX + _tooltip.caretX + 'px';
-        tooltipEl.style.top         = positionY + _tooltip.caretY + 'px';
-        tooltipEl.style.fontFamily  = _tooltip._bodyFontFamily;
-        tooltipEl.style.fontSize    = _tooltip.bodyFontSize + 'px';
-        tooltipEl.style.fontStyle   = _tooltip._bodyFontStyle;
-        tooltipEl.style.padding     = _tooltip.yPadding + 'px ' + _tooltip.xPadding + 'px';
-    };
-
-function setupChart() {
-    console.log("setupChart()");
-    
     var barColors    = [];
-    var chartData    = [];
     var barThickness = [];
     
     chartData.length = playList.length;
-     chartData.fill(0);
+    chartData.fill(0);
     barThickness.length = playList.length;
     barThickness.fill(1);
 
@@ -518,9 +538,9 @@ function setupChart() {
         chartData[state.songsPlayed[i]]++;
         }
 
-    // set current playing bar white & 3 wide
+    // highlight current playing & 6 wide
     barColors[state.songsPlayed[state.songsPlayed.length - 1]] = "#fd1";
-    barThickness[state.songsPlayed[state.songsPlayed.length - 1]] = 4;
+    barThickness[state.songsPlayed[state.songsPlayed.length - 1]] = 6;
 
     if (chart)
         chart.destroy();
@@ -532,7 +552,7 @@ function setupChart() {
         data: {
             labels: chartData,
             datasets: [{
-                label: 'Played',
+             /*   label: 'Played',*/
                 data:  chartData,
                 backgroundColor: barColors,
                 barThickness: barThickness,

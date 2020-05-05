@@ -3,18 +3,17 @@
 // 2. xmms perferences...general plugins...
 //    song change plugin...
 //    set command to
-//    wget -qO - winamp:3000/newsong/"%f"
+//    wget -qO - winamp:3000/newsong/"%f" &
 const Pug           = require('pug');
 const Http          = require('http');
 const Fs            = require("fs");
 const WSServer      = require('websocket').server;
 const Express       = require('express');
-const wsPort        = 6502;
-const wsHost        = "winamp";
-const serverUrl     = "ws://" + wsHost + ":" + wsPort;
-const playListFile  = "/home/ian/monday.pls";
-const App           = Express();
 const { execFile, readFile} = require('child_process');
+const App           = Express();
+const wsPort        = 6502;
+const serverUrl     = "ws://winamp:" + wsPort;
+const playListFile  = "/home/ian/monday.pls";
 
 var playList = [];
 var clientList  = [];
@@ -25,12 +24,13 @@ var state = {
     playList: []
 };
 
-// turn shuffle on & start playing next songs...
-// this will cause xmms to send newsong http request
-execFile('xmms', ['-Son','-pf']);
-getPlayList();
+getPlayList(playListFile);
 setupExpress();
-setupWebsocket();
+setupWebsocket(serverUrl);
+// turn shuffle on & start playing next song...
+// this will cause xmms to send newsong http request
+// which will setup the initial state of the server
+execFile('xmms', ['-Son','-pf']);
 
 function connectXmmsToDarkice() {
     console.log("connectXmmsToDarkice()");
@@ -86,7 +86,7 @@ function setupExpress() {
     });
 
     App.get('/getbbplaylist', (_request, _response) => {
-        getPlayList();
+        getPlayList(playListFile);
 
         state.playList = playList.map(function(_n) {
             return _n.split(/\/[a-z]\//i)[1].slice(0,-4);
@@ -155,8 +155,7 @@ function setupExpress() {
 
     App.get('/setvolume/:level', (_request,_response) => {
         state.volume =  parseInt(_request.params.level);
-        console.log("Math.log10(state.volume) > " + Math.log10(state.volume))
-        execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + ',' + state.volume + '']);
+        execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + '%']);
         _response.end();
     });
 
@@ -170,17 +169,19 @@ function setupExpress() {
     });
 } // function setupExpress() {
 
-function sendState() {
-    console.log("sendState()");
+function sendState(_dontSendTo) {
+    console.log("sendState(" + _dontSendTo + ")");
     
     execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
-            state.duration = parseInt(_stdio.split(" ")[0]);
-            state.timeRemaining  = Math.abs(state.duration - _stdio.split(" ")[1]);
-        
-            for (var i = 0; i < clientList.length; i++) {
+        state.duration = parseInt(_stdio.split(" ")[0]);
+        // sometimes xmms reports the timeRemaining > duration ...?
+        state.timeRemaining = _stdio.split(" ")[1] > state.duration ?  state.duration : Math.abs(state.duration - _stdio.split(" ")[1]);
+    
+        for (var i = 0; i < clientList.length; i++) 
+            if (_dontSendTo != clientList[i].remoteAddress) {
                 console.log("Sending state to -> " + clientList[i].remoteAddress);
                 clientList[i].send(JSON.stringify({ state: state }));
-            }
+            } else console.log("Not sending state to -> " + clientList[i].remoteAddress);
         
         console.dir(state);
         delete state.queueSong;
@@ -188,8 +189,9 @@ function sendState() {
     });
 } // function sendState(_dontSendTo) {
 
-function setupWebsocket() {
+function setupWebsocket(_serverUrl) {
     console.log("setting up websocket");
+
     var wsHttp = Http.createServer((_request, _response) => {
         console.log((new Date()) + ' Received request for ' + _request.url);
 
@@ -198,7 +200,7 @@ function setupWebsocket() {
     }).listen(wsPort);
 
     var wsServer = new WSServer({
-        url: serverUrl,
+        url: _serverUrl,
         httpServer: wsHttp
     }); // var wsServer = new wsServer({
 
@@ -232,7 +234,7 @@ function setupWebsocket() {
     console.log("websocket listening on port " + wsPort);
 } // function setupWebsocket() {
 
-function getPlayList() {
+function getPlayList(_playListFile) {
     /* xmms playList.m3u file looks like this
     [playList]
     NumberOfEntries=5297
@@ -241,9 +243,9 @@ function getPlayList() {
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
     if (Fs.exists)
-        playList = Fs.readFileSync(playListFile, "utf8").split("\n");
+        playList = Fs.readFileSync(_playListFile, "utf8").split("\n");
             else 
-                throw new Error("Cannot find playlist " + playListFile);
+                throw new Error("Cannot find playlist " + _playListFile);
 
     console.log("reading playlist file " + playList.length + " songs");
 
@@ -252,7 +254,7 @@ function getPlayList() {
     playList.length--; // the last line is a cr
 
     playList.forEach((_entry, _index) => {
-        playList[_index] = playList[_index].split('//')[1];
+        playList[_index] = _entry.split('//')[1];
     });
 
 console.dir(playList);
