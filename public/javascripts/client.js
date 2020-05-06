@@ -30,16 +30,13 @@ $(document).ready(function() {
 function setupClock() {
     console.log("setupClock()");
 
-    setInterval(function() { 
-        var margin = -(state.timeRemaining / state.duration) * 375 + 150;
+    setInterval(function() {
+        if (!state.paused && (state.timeRemaining > 0)) {
+            state.timeRemaining--;
+            var margin = -(state.timeRemaining / state.duration) * 375 + 150;
 
-        if (!state.paused && state.timeRemaining > 0) {
-            state.timeRemaining--
-
-            if (margin < 375 && (margin < 150)) {
-                $("#progressbar").css("left", margin);
-                $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
-            }
+            $("#progressbar").css("left", margin);
+            $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
         } // if (!state.paused && state.timeRemaining > 0) {
     }, 1000); // setInterval(function() { 
 }
@@ -74,18 +71,20 @@ function getBBState(_getWhat) {
     console.log("getBBState(" +  _getWhat + ")");
 
     setTimeout(function () {
-        if (_getWhat == "getbbplaylist")
-            $.getJSON(_getWhat, function(_playList) {
-                setupSearchAutoComplete();
-                playList = _playList;
-                populateSelectBox();
-            });
-            
-        if (_getWhat == "getbbstate") 
             $.getJSON(_getWhat, function(_state) {
-                state = _state;
-                updateUI();
-            });
+                switch(_getWhat) {
+                    case "getbbplaylist":
+                        setupSearchAutoComplete();
+                        playList = _state;
+                        populateSelectBox();
+                    break;
+
+                    case "getbbstate":
+                        state = _state;
+                        updateUI();
+                    break;
+                } // switch(_getWhat) {
+            }); //  $.getJSON(_getWhat, function(_playList) {
     },750);
 }
 
@@ -100,12 +99,12 @@ function setupVolumeControl() {
     $("#volume").on("slidechange", function(_event, _ui) {
         state.volume = _ui.value;
         $.get("setvolume/" + state.volume);
-  //      setVolume();
+  //      updateVolumeUI();
     });
 } // function setupVolumeControl() {
 
-function setVolume() {
-    console.log("setVolume() -> " + state.volume);
+function updateVolumeUI() {
+    console.log("updateVolumeUI() -> " + state.volume);
 
     var red   = parseInt((state.volume * 2.55) / 16).toString(16);
     var green = parseInt((255 - state.volume * 1.27) / 16).toString(16);
@@ -113,19 +112,10 @@ function setVolume() {
 
     $("#volume").css("background-color","#" + red + green + blue);
     $("#volume").slider("value", state.volume);
-    
  //   $.get("setvolume/" + state.volume);
 }
  
 function setupMouseEvents() {
-    /*
-    $("#pause").on("click", function () {
-        $.get("pause");
-
-        if (itsTheBlackerry)
-            state.paused = !state.paused; 
-    })
-*/
     $("#winamp").on("click", function () {
         if (itsTheBlackerry)
             getBBState("getbbstate");
@@ -138,7 +128,7 @@ function setupMouseEvents() {
                 else
                    state.volume--;
 
-        setVolume();
+        updateVolumeUI();
     }) // $("#timeremaining,#winamp,#prev,#pause,#next,#shuffleenabled,#progressbar,#volume").on("wheel", function(_event) {
 
     $("#prev,#pause,#next,#shuffle,#timeremaining").click(function() { 
@@ -146,34 +136,32 @@ function setupMouseEvents() {
 
         if (itsTheBlackerry && ((this).id == 'pause')) {
             state.paused = !state.paused; 
-      //      getBBState("getbbstate");
-      updateUI();
-}
+            updateUI();
+        }
      });
 
     $("#queuesong").click(function() {
+        $.get("queuesong/" + getSearchInputSongIndex());
+
         if (itsTheBlackerry) {
             $("#popupdialog").css("display", "inline-block");
             $("#popupdialog").html($("#searchinput").val() + " queued.");
             $("#popupdialog").hide("drop", { direction: "down" }, 10000);
         } 
-
-        $.get("queuesong/" + getSearchInputSongIndex());
     });
 
     $("#playsong").click(function() {
-        if (itsTheBlackerry) {
-            getBBState("playsong");
-             $.getJSON(_getWhat, function(_state) {
-                state = _state;
-                updateUI();
-            });
-               } else
-                    $.get("playsong/" + getSearchInputSongIndex());
+        $.get("playsong/" + getSearchInputSongIndex());
+
+        if (itsTheBlackerry)
+            getBBState("getbbstate");
     });
     
     $("#playlist").dblclick(function() {
         $.get("playsong/" + getSearchInputSongIndex());
+
+        if (itsTheBlackerry)
+            getBBState("getbbstate");
     });
 } // function setupMouseEvents() {
 
@@ -208,7 +196,6 @@ function setupPlayListKBEvents() {
 } // function setupPlayListKBEvents(){
 
 function setupBodyKBEvents() {
-//   $("body").keyup(function(_event) {
     $("body").keypress(function(_event) {
         console.log("keypress -> " + _event.which);
         
@@ -229,12 +216,12 @@ function setupBodyKBEvents() {
 
             case 111: // o
                 state.volume++;
-                setVolume();
+                updateVolumeUI();
             break;
 
             case 105: // i
                 state.volume--;
-                setVolume();
+                updateVolumeUI();
             break;
 
             case 106: // j
@@ -265,10 +252,10 @@ function updateUI() {
     var currentlyPlaying = playList[state.songsPlayed[state.songsPlayed.length -1]];
 
     $("#title").text(currentlyPlaying);
-    $("#songtitle").text(state.songsPlayed.length + ". " + currentlyPlaying + " (" + parseInt(state.duration).toString().toMMSS() + ")");
+    $("#songtitle").text(state.songsPlayed.length + ". " + currentlyPlaying + " (" + state.duration.toString().toMMSS() + ")");
     $("#searchinput").val(currentlyPlaying);
 
-    setVolume();
+    updateVolumeUI();
 
     if (playList.length > 0)
         $("#playlist>option:eq(" + state.songsPlayed[state.songsPlayed.length - 1] + ")").prop('selected', true);
@@ -305,8 +292,9 @@ function populateSelectBox() {
 } // function populateSelectBox() {
 
 function setupBlackerry() {
-    $("body").css("width","500px");
+    $("body").css("width","768px");
     $("body").css("margin-left","0px");
+    $("body").css("text-align","left");
     $("#progressbar").css("display","absolute");
     $("#searchinput").css("width","90%");
     $("#winamp").css("margin-top","50px");
@@ -335,7 +323,6 @@ function setupWebSocket() {
 
         if (state.hasOwnProperty('queueSong')) {
             console.log("Queueing song #" + state.queueSong + " -> " + playList[state.queueSong]);
-
             $("#popupdialog").css("display", "inline-block");
             $("#popupdialog").html(playList[state.queueSong] + " queued.");
             $("#popupdialog").hide("drop", { direction: "down" }, 10000);
@@ -419,22 +406,20 @@ function setupSearchAutoComplete() {
         emptymessage: "MP3 not found",
         customize: function(_input, _inputRect, _container, _maxHeight) {
             if (itsTheBlackerry)
-                _container.style.maxWidth = "500px";
+                _container.style.maxWidth = "768px";
             
-            /* You can use the following snippet to display autocomplete
-                above the input field if there is not enough space for it.*/
+            // You can use the following snippet to display autocomplete
+            // above the input field if there is not enough space for it.
             if (_maxHeight < 100) {
-                    _container.style.top = "";
-                    _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
-                    _container.style.maxHeight = "140px";
+                _container.style.top = "";
+                _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
+                _container.style.maxHeight = "140px";
             } // if (maxHeight < 100) {
         } // customize: function(input, inputRect, container, maxHeight) {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {
 
 function setupChart() {
-    var chartData    = [];
-
     console.log("setupChart()");
 
     var customTooltips = function(_ttModel) {
@@ -477,15 +462,12 @@ function setupChart() {
         var bodyLines = _ttModel.body.map(getBody);
         var innerHtml = "";
 
-    //var ttWidth = parseInt($(ttElement).css("left")); - parseInt($(ttElement).css("right"));// - $(ttElement).css("height");
     var ttWidth = parseInt($(ttElement).css("left")) + (parseInt($(ttElement).css("width")) / 2);
     var mouseX = _ttModel.caretX;
     var ttLeft =  parseInt($(ttElement).css("left"));
     var ttCentreXMin   = (ttWidth / 2); // far left  min
     var ttCentreXMax   = ttLeft + (ttWidth / 2); // far right max
     var dbstr = "false";
-
-    //$(ttElement).css("width",500);
 
     if (dbstr != "false")
         if ((mouseX < ttCentreXMax) && (mouseX > ttCentreXMin)) {
@@ -518,13 +500,13 @@ function setupChart() {
         tableRoot.innerHTML = innerHtml;
 
         ttElement.style.opacity     = 1;
-    //    ttElement.style.left        = ( _ttModel.caretX) + 'px';
         ttElement.style.left        = (mouseX) + 'px';
         ttElement.style.fontFamily  = _ttModel._bodyFontFamily;
         ttElement.style.fontSize    = _ttModel.bodyFontSize + 'px';
         ttElement.style.fontStyle   = _ttModel._bodyFontStyle;
     };  // var customTooltips = function(_ttModel) {
 
+    var chartData    = [];
     var barColors    = [];
     var barThickness = [];
     
@@ -536,7 +518,7 @@ function setupChart() {
     for (var i =0; i < state.songsPlayed.length;i++) {
         barColors[state.songsPlayed[i]] = document.body.style.color;
         chartData[state.songsPlayed[i]]++;
-        }
+    }
 
     // highlight current playing & 6 wide
     barColors[state.songsPlayed[state.songsPlayed.length - 1]] = "#fd1";
@@ -588,26 +570,21 @@ function setupChart() {
                 },
                 scales: {  
                     xAxes: [{
-                           
                         ticks: {
-                            callback: function(_value, _index, _values) {
-//                                    return _value;
-                            }
+                            callback: function(_value, _index, _values) { return; }
                         } // ticks: {
                     }], // xAxes: [{
-                yAxes: [{
-                    ticks: {
-                        min: 0,
+                    yAxes: [{
+                        ticks: {
+                            min: 0,
                             stepSize: 1,
-                            callback: function(_value, _index, _values) {
-                               // return _value;
-                        }
-                    }
+                            callback: function(_value, _index, _values) { return; }
+                    } // ticks: {
                 }] // yAxes: [{
             } // scales: { 
         } // options: {
     }); //  chart = new Chart(ctx, {
-}
+} // function setupChart() {
  
 function getSearchInputSongIndex() {
     for (var i = 0; i < playList.length; i++)
