@@ -131,18 +131,18 @@ function setupExpress() {
         var command = _request.url.replace('/','');
 
         switch (command) {
-            case "next":
+            case "next": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-f']);
             break;
 
-            case "prev":
+            case "prev": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-r']);
             break;
 
             case "pause":
                 execFile('xmms', ['-t']);
                 state.paused = !state.paused;
-                await getState()
+                await getState(); // update time in state
                 sendState(_request.remoteAddress);
                 _response.send(state);
             break;
@@ -150,7 +150,7 @@ function setupExpress() {
             case "shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
-                await getState()
+                await getState(); // update time in state
                 sendState(_request.remoteAddress);
                 _response.send(state);
             break;

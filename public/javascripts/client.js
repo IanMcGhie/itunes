@@ -32,8 +32,6 @@ $(document).ready(function() {
     setupTicker(250);
     setupClock();
 
-log(LOG,escape("wtf is this? #"));
-
     document.body.style.color = "#0d0"; 
 }); // $(document).ready(() => {
 
@@ -105,14 +103,13 @@ function setupVolumeControl() {
     });
  
     $("#volume").on("slidechange", function(_event, _ui) {
-        log(LOG,"slidechange cb fired state.volume -> " + state.volume);
-
         if (state.hasOwnProperty('volume')) {
             log(LOG,"not sending volume back to server...removing state.volume");
             delete state.volume;
             return;
         }
 
+        log(LOG,"slidechange cb fired  _ui.value -> " +  _ui.value);
         $.get("setvolume/" + _ui.value);
     });
 } // function setupVolumeControl() {
@@ -150,7 +147,11 @@ function setupMouseEvents() {
     $("#playsong,#queuesong").click(function() {
         getState("queuesong/" + getSearchInputSongIndex());
     });
-
+    
+    $("#playlist").change(function() {
+        $("#searchinput").val($("#playlist").val());
+    });
+    
     $("#playlist").dblclick(function() {
         getState("playsong/" + getSearchInputSongIndex());
     });
@@ -247,7 +248,6 @@ function updateUI() {
     var currentSongTitle = playList[getCurrentSongIndex()];
     
     $("#title").text(currentSongTitle);
-    
     $("#songtitle").text(currentSongTitle + " (" + state.duration.toString().toMMSS() + ")");
     $("#searchinput").val(currentSongTitle);
     $("#playlist>option:eq(" + getCurrentSongIndex() + ")").prop('selected', true);
@@ -294,10 +294,6 @@ function populateSelectBox() {
         option.text = playList[i];
         select.add(option);
     } // for (var i = 0; i < playList.length; i++) {
-    
-    $("#playlist").change(function() {
-        $("#searchinput").val($("#playlist").val());
-    });
 } // function populateSelectBox() {
 
 function setupBlackBerry() {
@@ -314,9 +310,7 @@ function setupWebSocket() {
 
     client.onmessage = function(_response) {
         log(LOG,"ommessage state received");
-
         state = JSON.parse(_response.data).state;
-            
         log(DIR,state);
         
         if (state.hasOwnProperty('songsPlayed')) {
