@@ -19,7 +19,6 @@ var clientList  = [];
 var debug       = true;
 var LOG         = 0;
 var DIR         = 1;
-var SENDTOALL   = true;
 var volume = 40;
 
 var state = {
@@ -65,16 +64,15 @@ async function getState() {
     
     return new Promise(resolve => {
         setTimeout(() => {
+            execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
+                    var args = _stdio.split(" ");
 
-        execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
-                var args = _stdio.split(" ");
+                    state.duration = parseInt(args[0]);
+                    state.timeRemaining  = Math.abs(state.duration - parseInt(args[1]));
+                    state.volume = volume;
 
-                state.duration = parseInt(args[0]);
-                state.timeRemaining  = Math.abs(state.duration - parseInt(args[1]));
-                state.volume = volume;
-
-                log(DIR,state);
-                resolve();               
+                    log(DIR,state);
+                    resolve();               
             });
         }, 100);
     });
@@ -145,16 +143,16 @@ function setupExpress() {
                 execFile('xmms', ['-t']);
                 state.paused = !state.paused;
                 await getState()
-                _response.send(state);
                 sendState(_request.remoteAddress);
+                _response.send(state);
             break;
 
             case "shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
                 await getState()
-                _response.send(state);
                 sendState(_request.remoteAddress);
+                _response.send(state);
             break;
         } //switch (_request.url) {
     
@@ -181,18 +179,13 @@ function setupExpress() {
         connectXmmsToDarkice();
         
         await getState()
-        _response.send(state);
         sendState(_request.remoteAddress,'newsong');
-
+        _response.send(state);
         _response.end();
     });
 
     App.get('/playsong/:index', (_request, _response) => { 
         execFile('qxmms',['jump',parseInt(_request.params.index) + 1], (_err,_stdio,_stderr) => {
-            log(LOG,"playsong _err -> " + _err);
-            log(LOG,"playsong _stdio -> " + _stdio);
-            log(LOG,"playsong _stderr -> " + _stderr);
-            
             _response.end();
         });
     });
@@ -207,12 +200,9 @@ function setupExpress() {
                                 else volume = parseInt(_request.params.level);
 
         state.volume = volume;
-
         setVolume();
-
-        _response.send(state);
         sendState(_request.socket.remoteAddress,'/setvolume/:level');
-
+        _response.send(state);
         _response.end();
     });
 
@@ -222,8 +212,8 @@ function setupExpress() {
 
         // this adds it to the bottom of the playList & queues it
         execFile("xmms", ['-Q',  playListFullPath[state.queueSong]], (_err,_stdio,_stderr) => {
-            _response.send(state);
             sendState(_request.remoteAddress,'queuesong');
+            _response.send(state);
             _response.end();
         });
     });

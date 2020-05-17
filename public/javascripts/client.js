@@ -17,8 +17,8 @@ $(document).ready(function() {
 
     itsTheBlackBerry = itsNotFirefox && itsNotChrome;
 
-    getPlayList();
-    getState();
+    getState('getplaylist');
+    getState('getstate');
 
     if (itsTheBlackBerry) 
         setupBlackBerry(); // sync ui
@@ -64,13 +64,11 @@ function setupTicker(_delayMs) {
 }
 
 String.prototype.toMMSS = function() {
-    var seconds = parseInt(this);
-    var minutes = parseInt(seconds / 60);
+    var minutes = parseInt(this / 60);
+    var seconds = this - (minutes * 60);
 
     if (minutes < 10) 
         minutes = "0" + minutes;
-   
-    seconds -= minutes * 60;
 
     if (seconds < 10)
         seconds = "0" + seconds;
@@ -78,26 +76,22 @@ String.prototype.toMMSS = function() {
     return minutes + ":" + seconds;
 } // String.prototype.toMMSS = function () {
 
-function getState() {
-    log(LOG,"getState()");
-    setTimeout(function () {
-        $.getJSON("getstate", function(_state) {
-            state = _state;
-            updateUI();
-            updateVolumeUI();
-            log(DIR,state);
-        });
-    }, 250);
-}
+function getState(_getWhat) {
+    log(LOG,"getState(" + _getWhat + ")");
 
-function getPlayList() {
-    log(LOG,"getPlayList()");
     setTimeout(function () {
-        $.getJSON("getplaylist", function(_playList) {
-            playList = _playList;
-            setupSearchAutoComplete();
-            populateSelectBox();
-            log(LOG,"playList retrieved length -> " + playList.length);
+        $.getJSON(_getWhat, function(_state) {
+            if (_getWhat == "getplaylist") {
+                playList = _state;
+                setupSearchAutoComplete();
+                populateSelectBox();
+                } else {
+                        state = _state;
+                        updateUI();
+                        updateVolumeUI();
+                }
+
+            log(DIR,state);
         });
     }, 250);
 }
@@ -138,10 +132,7 @@ function updateVolumeUI() {
  
 function setupMouseEvents() {
     $("#winamp").on("click", function () {
-        $.getJSON("getstate", function(_state) {
-            state = _state;
-            updateUI();
-        });
+        getState('getstate');
     })
 
     // mouse wheel volume control
@@ -153,32 +144,15 @@ function setupMouseEvents() {
     }) // $("#timeremaining,#winamp,#prev,#pause,#next,#shuffleenabled,#progressbar,#volume").on("wheel", function(_event) {
 
     $("#prev,#pause,#next,#shuffle,#timeremaining").click(function() { 
-        $.getJSON((this).id, function(_state) {
-            state = _state;
-            updateUI();
-        });
+        getState((this).id);
      });
 
-    $("#queuesong").click(function() {
-        $.getJSON("queuesong/" + getSearchInputSongIndex(), function(_state) {
-            state = _state;
-            updateUI();
-
-        });
+    $("#playsong,#queuesong").click(function() {
+        getState("queuesong/" + getSearchInputSongIndex());
     });
 
-    $("#playsong").click(function() {
-        $.getJSON((this).id + "/" + getSearchInputSongIndex(), function(_state) {
-            state = _state;
-            updateUI();
-        });
-    });
-    
     $("#playlist").dblclick(function() {
-        $.getJSON("playsong/" + getSearchInputSongIndex(), function(_state) {
-            state = _state;
-            updateUI();
-        });
+        getState("playsong/" + getSearchInputSongIndex());
     });
 
     $("#chart").click(function () {
@@ -223,17 +197,11 @@ function setupBodyKBEvents() {
         
         switch (_event.which) {
             case 122: // z
-                $.getJSON("prev", function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("prev");
             break;
 
             case 98: // b
-                $.getJSON("next", function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("next");
             break;
 
             case 111: // o
@@ -251,32 +219,19 @@ function setupBodyKBEvents() {
             break;
 
             case 109: // m
-                $.getJSON("setvolume/mute", function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("setvolume/mute");
             break;
 
             case 99: // c
-                $.getJSON("pause", function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("pause");
             break;
 
             case 115: // s
-                $.getJSON("shuffle", function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("shuffle");
             break;
 
             case 113: // q
-//                $.get("queuesong/" + getSearchInputSongIndex());
-                $.getJSON("queuesong/" + getSearchInputSongIndex(), function(_state) {
-                    state = _state;
-                    updateUI();
-                });
+                getState("queuesong/" + getSearchInputSongIndex());
             break;
         } // switch (_event.which) {
     }); // $("body").keyup(function(_event) {
