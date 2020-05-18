@@ -79,7 +79,7 @@ async function getState() {
 }
 
 function setVolume() {
-    log(LOG,"setting state.volume -> " + volume + "% mute -> " + state.mute);
+    log(LOG,"setVolume() volume -> " + volume + "% state.mute -> " + state.mute);
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', volume]);
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
 }
@@ -128,18 +128,16 @@ function setupExpress() {
     });
 
     App.get('/next|/prev|/pause|/shuffle', async (_request, _response) => {
-        var command = _request.url.replace('/','');
-
-        switch (command) {
-            case "next": // this will cause xmms to send newsong request to server
+        switch (_request.url) {
+            case "/next": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-f']);
             break;
 
-            case "prev": // this will cause xmms to send newsong request to server
+            case "/prev": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-r']);
             break;
 
-            case "pause":
+            case "/pause":
                 execFile('xmms', ['-t']);
                 state.paused = !state.paused;
                 await getState(); // update time in state
@@ -147,7 +145,7 @@ function setupExpress() {
                 _response.send(state);
             break;
 
-            case "shuffle":
+            case "/shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
                 await getState(); // update time in state
@@ -164,14 +162,14 @@ function setupExpress() {
         state.paused = false;
 
         if (parseInt(_request.params[0]) < playListFullPath.length - 1) {
-            state.songsPlayed.push(parseInt(_request.params[0] - 1));
-            } else {
+            state.songsPlayed.push(parseInt(_request.params[0] - 1)); // playlist mp3
+            } else { // queued mp3 at end of playlist
                     execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 
                     for (var i = 0; i < playListFullPath.length; i++)
                         if (playListFullPath[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
                             state.songsPlayed.push(i);
-                            log(LOG,"new queued song title " + _stdio + " index -> " + i);
+                            log(LOG,"Queued song title " + _stdio + " index -> " + i);
                             }
                         });
                     } //     } else {
@@ -197,7 +195,8 @@ function setupExpress() {
                     volume--;
                         else if (_request.params.level == 'mute')
                             state.mute = !state.mute;
-                                else volume = parseInt(_request.params.level);
+                                else 
+                                    volume = parseInt(_request.params.level);
 
         state.volume = volume;
         setVolume();
@@ -220,32 +219,23 @@ function setupExpress() {
 } // function setupExpress() {
 
 function sendState(_dontSendTo,_logMsg) {
-    log(LOG,"sendState(" + _dontSendTo + ", " + _logMsg + ") clientList.length -> " + clientList.length + " clients _dontSendTo -> " + _dontSendTo);
-    
-    if (clientList.length > 0) 
+    log(LOG,"sendState(" + _dontSendTo + ", " + _logMsg + ") clientList.length -> " + clientList.length);
         execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
            var args = _stdio.split(" ");
 
-            state.duration = parseInt(args[0]);
             // sometimes xmms reports the timeRemaining > duration ...?
+            state.duration = parseInt(args[0]);
             state.timeRemaining = args[1] > state.duration ?  state.duration : Math.abs(state.duration - args[1]);
-           // state.timeRemaining = Math.abs(state.duration - args[1]);
 
             log(DIR,state);
 
-            for (var i = 0; i < clientList.length; i++) {
-                if (_dontSendTo == true) {
-                    log(LOG,"Sending state to -> " + clientList[i].remoteAddress);
-                    clientList[i].send(JSON.stringify({state: state}));
-                } else {
+            for (var i = 0; i < clientList.length; i++) //{
                     if (clientList[i].remoteAddress != _dontSendTo) {
                         log(LOG,"Sending state to -> " + clientList[i].remoteAddress);
                         clientList[i].send(JSON.stringify({state: state}));
                         } else {
                                 log(LOG,"not sending state to -> " + clientList[i].remoteAddress);
                                 }
-                }
-            }
 
             if (state.hasOwnProperty('volume') ) {
                 log(LOG,"removing volume from state");
@@ -281,7 +271,6 @@ function setupWebsocket() {
 
     wsServer.on('request', (_request) => {
         log(LOG,"websocket request -> " + _request.resource + " from -> " + _request.remoteAddress);
-        
         _request.accept('winamp', _request.origin);
     }); // wsServer.on('request', (_request) => {
 
@@ -299,7 +288,7 @@ function setupWebsocket() {
 
 function getPlayList() {
     var i = 0;
-    /* xmms playList.m3u file looks like this
+    /* xmms monday.pls file looks like this
     [playList]
     NumberOfEntries=5297
     File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3

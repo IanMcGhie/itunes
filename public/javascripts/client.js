@@ -85,11 +85,10 @@ function getState(_getWhat) {
                 populateSelectBox();
                 } else {
                         state = _state;
+                        log(DIR,state);
                         updateUI();
                         updateVolumeUI();
                 }
-
-            log(DIR,state);
         });
     }, 250);
 }
@@ -104,20 +103,20 @@ function setupVolumeControl() {
  
     $("#volume").on("slidechange", function(_event, _ui) {
         if (state.hasOwnProperty('volume')) {
-            log(LOG,"not sending volume back to server...removing state.volume");
+            log(LOG,"not sending volume back to server. Removing state.volume from state");
             delete state.volume;
             return;
         }
 
-        log(LOG,"slidechange cb fired  _ui.value -> " +  _ui.value);
+        log(LOG,"slidechange callback fired. Sending new value to server.  _ui.value -> " +  _ui.value);
         $.get("setvolume/" + _ui.value);
     });
 } // function setupVolumeControl() {
 
 function updateVolumeUI() {
-    log(LOG,"updateVolumeUI() -> " + state.volume);
-
     if (state.hasOwnProperty('volume')) {
+        log(LOG,"updateVolumeUI() -> " + state.volume);
+    
         var red   = parseInt((state.volume * 2.55) / 16).toString(16);
         var green = parseInt((255 - state,volume * 1.27) / 16).toString(16);
         var blue  = "0";
@@ -145,7 +144,7 @@ function setupMouseEvents() {
      });
 
     $("#playsong,#queuesong").click(function() {
-        getState("queuesong/" + getSearchInputSongIndex());
+        getState((this).id + "/" + getSearchInputSongIndex());
     });
     
     $("#playlist").change(function() {
@@ -259,6 +258,7 @@ function updateUI() {
         $("#popupdialog").html(playList[state.queueSong] + " queued.");
         $("#popupdialog").fadeOut(6000);
         
+        log(LOG,"removing state.queueSong from state");        
         delete state.queueSong;
         } 
 
@@ -328,7 +328,7 @@ function charsAllowed(_value) {
 }
 
 function setupSearchAutoComplete() {
-    log(LOG,"setupSearchAutoComplete()");
+    log(LOG,"setupSearchAutoComplete() playList.length -> " + playList.length);
 
     $("#searchinput").focusin(function() {
         $("#searchinput").css("border", "1px solid #0d0");
@@ -459,8 +459,8 @@ function setupChart() {
         if (index == getCurrentSongIndex()) {
             ttElement.style.color = "#fd1";
             ttElement.style.border = "1px solid #fd1";
-            innerHtml += '<tr><td>Currently playing</td></tr>';
-            innerHtml += '<tr><th>' + playList[index] + '</th></tr>';
+            innerHtml += '<tr><th>Currently playing<br><br></th></tr>';
+            innerHtml += '<tr><td>' + playList[index] + '</td></tr>';
             ttElement.style.width = ttWidth;
             } else {
                     ttElement.style.color = "#0d0";
@@ -470,8 +470,8 @@ function setupChart() {
                     if ((leftDist < 0) || (leftDist > window.innerWidth))
                         ttElement.style.border = "1px solid #f00";
 
-                    innerHtml += '<tr><td>Click to play</td></tr>';
-                    innerHtml += '<tr><th>' + playList[index] + '</th></tr>';
+                    innerHtml += '<tr><th>Click to play<br><br></th></tr>';
+                    innerHtml += '<tr><td>' + playList[index] + '</td></tr>';
   
                     if (dbstr != "false") {
                         innerHtml += '<tr><td>ttWidth: ' + ttWidth + '</td></tr>';
