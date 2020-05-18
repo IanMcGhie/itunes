@@ -464,7 +464,6 @@ function setupChart() {
             ttElement.style.width = ttWidth;
             } else {
                     ttElement.style.color = "#0d0";
-                    //                    $(ttElement).css("width", ttWidth);
                     ttElement.style.border = "1px solid #0d0";
 
                     if ((leftDist < 0) || (leftDist > window.innerWidth))
@@ -493,7 +492,6 @@ function setupChart() {
         ttElement.style.fontSize    = _ttModel.bodyFontSize + 'px';
         ttElement.style.fontStyle   = _ttModel._bodyFontStyle;
     };  // var customTooltips = function(_ttModel) {
-
     
     var barColors    = [];
     var barThickness = [];
@@ -512,7 +510,7 @@ function setupChart() {
             maxPlayCount = playCount[state.songsPlayed[i]];
     }
 
-    // highlight current playing & 6 wide
+    // highlight currently playing
     barColors[getCurrentSongIndex()] = "#fd1";
     barThickness[getCurrentSongIndex()] = 2;
     playCount[getCurrentSongIndex()] = maxPlayCount;

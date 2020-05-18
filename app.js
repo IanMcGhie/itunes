@@ -19,7 +19,7 @@ var clientList  = [];
 var debug       = true;
 var LOG         = 0;
 var DIR         = 1;
-var volume = 40;
+var volume      = 40;
 
 var state = {
     shuffle: true,
@@ -131,30 +131,42 @@ function setupExpress() {
         switch (_request.url) {
             case "/next": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-f']);
+//                sendState(_request.socket.remoteAddress,'/next');
+
+                setTimeout(() => {
+                    _response.send(state);
+                    _response.end();
+                },400);
             break;
 
             case "/prev": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-r']);
+     //           sendState(_request.socket.remoteAddress,'/next');
+
+                setTimeout(() => {
+                    _response.send(state);
+                    _response.end();
+                },400);
             break;
 
             case "/pause":
                 execFile('xmms', ['-t']);
                 state.paused = !state.paused;
                 await getState(); // update time in state
-                sendState(_request.remoteAddress);
+                sendState(_request.socket.remoteAddress,'/pause');
                 _response.send(state);
+                _response.end();
             break;
 
             case "/shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
                 await getState(); // update time in state
-                sendState(_request.remoteAddress);
+                sendState(_request.remoteAddress,'/shuffle');
                 _response.send(state);
+                _response.end();
             break;
         } //switch (_request.url) {
-    
-    _response.end();
     }); // App.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
 
     // xmms new song playing...this request came from xmms
@@ -177,7 +189,7 @@ function setupExpress() {
         connectXmmsToDarkice();
         
         await getState()
-        sendState(_request.remoteAddress,'newsong');
+        sendState(_request.remoteAddress,'newsong','/newsong/*');
         _response.send(state);
         _response.end();
     });
