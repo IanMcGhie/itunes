@@ -32,7 +32,7 @@ $(document).ready(function() {
     setupTicker(250);
     setupClock();
 
-    document.body.style.color = "#0d0"; 
+    document.body.style.color = "#0d0"; // set chart bar default color
 }); // $(document).ready(() => {
 
 function setupClock() {
@@ -53,7 +53,6 @@ function setupTicker(_delayMs) {
     log(LOG,"setupTicker(" +  _delayMs + ")");
 
     setInterval(function() {
-        if (state.hasOwnProperty('songsPlayed'))
             if ($("#title").text().length > 0)
                 $("#title").text($("#title").text().slice(1));
                     else
@@ -131,10 +130,10 @@ function setupMouseEvents() {
         getState('getstate');
     })
 
-    // mouse wheel volume control
     $("#timeremaining,#winamp,#prev,#pause,#next,#shuffleenabled,#progressbar,#volume").on("wheel", function(_event) {
+        // this will cause slidechange jquery cb to fire
         if (_event.originalEvent.deltaY < 0)
-            $("#volume").slider("value",parseInt($("#volume").slider("value") + 1));
+            $("#volume").slider("value",parseInt($("#volume").slider("value") + 1)); 
                 else
                    $("#volume").slider("value",parseInt($("#volume").slider("value") - 1));
     }) // $("#timeremaining,#winamp,#prev,#pause,#next,#shuffleenabled,#progressbar,#volume").on("wheel", function(_event) {
@@ -193,7 +192,7 @@ function setupPlayListKBEvents() {
 
 function setupBodyKBEvents() {
     $("body").keypress(function(_event) {
-        log(LOG,"keypress -> " + _event.which);
+        log(LOG,"body keypress -> " + _event.which);
         
         switch (_event.which) {
             case 122: // z
@@ -238,7 +237,7 @@ function setupBodyKBEvents() {
 } // function bodyKBEvents(_event) {
 
 function getCurrentSongIndex() {
-        return state.songsPlayed[state.songsPlayed.length - 1];
+    return state.songsPlayed[state.songsPlayed.length - 1];
 }
 
 function updateUI() {
@@ -253,7 +252,7 @@ function updateUI() {
     $("#popupdialog").css("display", "none");
     
     if (state.hasOwnProperty('queueSong')) {
-        log(LOG,"Queueing song #" + state.queueSong + " -> " + playList[state.queueSong]);
+        log(LOG,"popupdialog Queueing song #" + state.queueSong + " -> " + playList[state.queueSong]);
         $("#popupdialog").css("display", "inline-block");
         $("#popupdialog").html(playList[state.queueSong] + " queued.");
         $("#popupdialog").fadeOut(6000);
@@ -300,7 +299,7 @@ function setupBlackBerry() {
     $("body").css("width","768px");
   //  $("body").css("margin-left","0px");
     $("body").css("text-align","left");
-//    $("#searchinput").css("width","80%");
+    //$("#searchinput").css("width","90%");
     $("#playlist").css("width","100%");
 }
 
@@ -312,13 +311,8 @@ function setupWebSocket() {
         log(LOG,"ommessage state received");
         state = JSON.parse(_response.data).state;
         log(DIR,state);
-        
-        if (state.hasOwnProperty('songsPlayed')) {
-            setTimeout(function () {
-                updateUI();
-                updateVolumeUI();
-            }, 250);
-        }
+        updateUI();
+        updateVolumeUI();
     } //   client.onmessage = function(_response) {
 } 
 
@@ -331,13 +325,12 @@ function setupSearchAutoComplete() {
     log(LOG,"setupSearchAutoComplete() playList.length -> " + playList.length);
 
     $("#searchinput").focusin(function() {
+        $("body").off("keypress");
         $("#searchinput").css("border", "1px solid #0d0");
         $("#searchinput").val("");
-
-        $("body").off("keypress");
         $("#searchinput").keyup(function(_event) {      
             if ((_event.which == 13) || (_event.which == 27))
-                    $("#searchinput").blur();
+                $("#searchinput").blur();
         }); // $("#searchinput").keyup(function(_event) {
     }); // $("#searchinput").focusin(() => {
 
@@ -345,7 +338,6 @@ function setupSearchAutoComplete() {
         $("#searchinput").css("border", "1px solid #888");
         $("#searchinput").off("keyup");
         $("#searchinput").val($("#playlist").find("option:selected").val());
-
         setupBodyKBEvents();
     }); // $("#searchinput").focusout(function() {
 
@@ -393,11 +385,7 @@ function setupSearchAutoComplete() {
         },
         emptymessage: "MP3 not found",
         customize: function(_input, _inputRect, _container, _maxHeight) {
-    //        if (itsTheBlackBerry)
-      //          _container.style.maxWidth = "768px";
-            
-            // You can use the following snippet to display autocomplete
-            // above the input field if there is not enough space for it.
+            // display autocomplete above the input field if there is not enough space for it.
             if (_maxHeight < 100) {
                 _container.style.top = "";
                 _container.style.bottom = (window.innerHeight - _inputRect.bottom + _input.offsetHeight) + "px";
@@ -408,95 +396,12 @@ function setupSearchAutoComplete() {
 } //  setupSearchAutoComplete() {
 
 function setupChart() {
-    log(LOG,"setupChart()");
-
-    var customTooltips = function(_ttModel) {
-        var index = -1;
-        var ttElement = document.getElementById('chart-tooltip');
-
-        if (!ttElement) {
-            log(LOG,"creating tooltip div")
-            
-            ttElement = document.createElement('div');
-            ttElement.id = 'chart-tooltip';
-
-            ttElement.innerHTML = "<table>";
-
-            this._chart.canvas.parentNode.appendChild(ttElement);
-        } // if (!ttElement) {
-
-        function getBody(_bodyItem) {
-            return _bodyItem.lines;
-        }
-
-        if (this._active.length == 0) {
-            ttElement.style.opacity = 0;
-            return;
-        }
-
-        index = this._active[0]._index;
-        popupSongIndex = index;
-
-        // Hide if no tooltip
-        if (!state.songsPlayed.includes(index) || (this._active.length == 0)) {
-            ttElement.style.opacity = 0;
-            return;
-        }
-
-        // Set Text
-        log(LOG,"tooltip set text")
-        var bodyLines = _ttModel.body.map(getBody);
-        var innerHtml = "";
-        var ttWidth = parseInt($(ttElement).css('width')) * 2;     //$(ttElement).css("table-width");
-        var mouseX = _ttModel.caretX;
-        var leftDist = 100;
-        var rightDist = 2;
-        var dbstr = "false";
-
-        $(ttElement).css("table-width","max");
-
-        // highlight currently playing song
-        if (index == getCurrentSongIndex()) {
-            ttElement.style.color = "#fd1";
-            ttElement.style.border = "1px solid #fd1";
-            innerHtml += '<tr><th>Currently playing<br><br></th></tr>';
-            innerHtml += '<tr><td>' + playList[index] + '</td></tr>';
-            ttElement.style.width = ttWidth;
-            } else {
-                    ttElement.style.color = "#0d0";
-                    ttElement.style.border = "1px solid #0d0";
-
-                    if ((leftDist < 0) || (leftDist > window.innerWidth))
-                        ttElement.style.border = "1px solid #f00";
-
-                    innerHtml += '<tr><th>Click to play<br><br></th></tr>';
-                    innerHtml += '<tr><td>' + playList[index] + '</td></tr>';
-  
-                    if (dbstr != "false") {
-                        innerHtml += '<tr><td>ttWidth: ' + ttWidth + '</td></tr>';
-                        innerHtml += '<tr><td>window resolution: ' + window.innerWidth + ' X ' + window.innerHeight + '</td></tr>';
-                        innerHtml += '<tr><td>mouseX: ' +  mouseX + '</td></tr>';
-                        innerHtml += '<tr><td>distance from left: ' + leftDist + '</td></tr>';
-                        innerHtml += '<tr><td>distance from right: ' + rightDist + '</td></tr>';
-                    }
-            }
-    
-        innerHtml += '</table>';
-
-        var tableRoot = ttElement.querySelector('table');
-        tableRoot.innerHTML = innerHtml;
-
-        ttElement.style.opacity     = 1;
-        ttElement.style.left        = (_ttModel.caretX / 2) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
-        ttElement.style.fontFamily  = _ttModel._bodyFontFamily;
-        ttElement.style.fontSize    = _ttModel.bodyFontSize + 'px';
-        ttElement.style.fontStyle   = _ttModel._bodyFontStyle;
-    };  // var customTooltips = function(_ttModel) {
-    
     var barColors    = [];
     var barThickness = [];
     var maxPlayCount = 0;
 
+    log(LOG,"setupChart()");
+    
     playCount.length = playList.length;
     playCount.fill(0);
     barThickness.length = playList.length;
@@ -518,7 +423,52 @@ function setupChart() {
     if (chart)
         chart.destroy();
     
-    Chart.defaults.global.pointHitDetectionRadius = 1;
+    var customTooltips = function(_ttModel) {
+        var ttElement = document.getElementById('chart-tooltip');
+        var innerHtml = "";
+
+        if (!ttElement) {
+            log(LOG,"creating tooltip div")
+            
+            ttElement = document.createElement('div');
+            ttElement.id = 'chart-tooltip';
+            ttElement.innerHTML = "<table>";
+            this._chart.canvas.parentNode.appendChild(ttElement);
+        } // if (!ttElement) {
+
+        if (this._active.length == 0) {
+            ttElement.style.opacity = 0;
+            return;
+        }
+
+        popupSongIndex = this._active[0]._index;
+
+        // Hide if no tooltip
+        if (!state.songsPlayed.includes(popupSongIndex) || (this._active.length == 0)) {
+            ttElement.style.opacity = 0;
+            return;
+        }
+
+        // highlight currently playing song
+        if (popupSongIndex == getCurrentSongIndex()) {
+            ttElement.style.color = "#fd1";
+            ttElement.style.border = "1px solid #fd1";
+            innerHtml += '<tr><th>Currently playing</th></tr>';
+            innerHtml += '<tr><td>' + playList[popupSongIndex] + '</td></tr>';
+            ttElement.style.width = parseInt($(ttElement).css('width')) * 2;
+            } else {
+                    ttElement.style.color = "#0d0";
+                    ttElement.style.border = "1px solid #0d0";
+                    innerHtml += '<tr><th>Click to play</th></tr>';
+                    innerHtml += '<tr><td>' + playList[popupSongIndex] + '</td></tr>';
+            }
+    
+        innerHtml += '</table>';
+
+        ttElement.querySelector('table').innerHTML = innerHtml;
+        ttElement.style.opacity = 1;
+        ttElement.style.left    = (_ttModel.caretX / 2) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
+    };  // var customTooltips = function(_ttModel) {
 
     chart = new Chart($("#chart"), {
         type: 'bar',

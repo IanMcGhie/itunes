@@ -131,8 +131,7 @@ function setupExpress() {
         switch (_request.url) {
             case "/next": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-f']);
-//                sendState(_request.socket.remoteAddress,'/next');
-
+                // this is for so my bb
                 setTimeout(() => {
                     _response.send(state);
                     _response.end();
@@ -141,8 +140,7 @@ function setupExpress() {
 
             case "/prev": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-r']);
-     //           sendState(_request.socket.remoteAddress,'/next');
-
+                // this is for so my bb
                 setTimeout(() => {
                     _response.send(state);
                     _response.end();
@@ -223,8 +221,9 @@ function setupExpress() {
 
         // this adds it to the bottom of the playList & queues it
         execFile("xmms", ['-Q',  playListFullPath[state.queueSong]], (_err,_stdio,_stderr) => {
+            // display popup notification on clients
             sendState(_request.remoteAddress,'queuesong');
-            _response.send(state);
+            _response.send(state); 
             _response.end();
         });
     });

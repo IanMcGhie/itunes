@@ -32,18 +32,14 @@ strong {
 table {
     text-align: center;
 }
-/*
+
 td {
     padding: 10px;
 }
-*/
-.chart-container {
-    
-
-   
-}
 
 #chart-tooltip {
+    font-family: "Hack";
+    font-size: 20px;
     margin-top: 150px;
     padding: 20px;
     position: fixed;
@@ -52,14 +48,6 @@ td {
     border-radius: 20px;
     background: #000;
 }
-/*
-.chart-tooltip-key {
-    display: inline-block;
-    width: 10px;
-    height: 10px;
-    margin-right: 10px;
-}
- */
 
 #songtitle {
     margin-top: 25px;
@@ -173,8 +161,6 @@ td {
 #popupdialog { 
     padding: 20px;
     position: fixed;
-    left: 25%;
-    right: 25%;
     top: 45%;
     color: #fd1;
     border: 1px solid #fd1;
