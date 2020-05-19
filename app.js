@@ -148,8 +148,14 @@ function setupExpress() {
             break;
         } //switch (_request.url) {
 
-        _response.send(state);
-        _response.end();
+                // this is for so my bb
+                setTimeout(() => {
+                    _response.send(state);
+                    _response.end();
+                },400);
+
+//        _response.send(state);
+  //      _response.end();
     }); // App.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
 
     // xmms new song playing...this request came from xmms
