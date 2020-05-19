@@ -1,7 +1,5 @@
 "use strict";
 // bb doesnt like the const keyword...async functions....promises
-var serverUrl   = "ws://winamp:6502";
-var state       = {};
 var playList    = [];
 var itsTheBlackBerry = false;
 var chart;
@@ -10,6 +8,7 @@ var LOG         = 0;
 var DIR         = 1;
 var popupSongIndex = 0;
 var playCount    = [];
+var state       = {};
 
 $(document).ready(function() {
     var itsNotFirefox = typeof InstallTrigger === 'undefined';
@@ -39,13 +38,13 @@ function setupClock() {
     log(LOG,"setupClock()");
 
     setInterval(function() {
-        if (!state.paused && (state.timeRemaining > 0)) {
+        if (!state.pause && (state.timeRemaining > 0)) {
             state.timeRemaining--;
             var margin = ((state.timeRemaining / state.duration) * -395) - 60;
 
             $("#progressbar").css("margin-left", margin);
             $("#timeremaining").text('-' + state.timeRemaining.toString().toMMSS());
-        } // if (!state.paused && state.timeRemaining > 0) {
+        } // if (!state.pause && state.timeRemaining > 0) {
     }, 1000); // setInterval(function() { 
 }
 
@@ -57,12 +56,12 @@ function setupTicker(_delayMs) {
                 $("#title").text($("#title").text().slice(1));
                     else
                         $("#title").text(playList[getCurrentSongIndex()]);
-    }, _delayMs); // setInterval(function() {
+        }, _delayMs); // setInterval(function() {
 }
 
 String.prototype.toMMSS = function() {
-    var minutes = parseInt(this / 60);
-    var seconds = this - (minutes * 60);
+   var minutes = parseInt(this / 60);
+   var seconds = this % 60;
 
     if (minutes < 10) 
         minutes = "0" + minutes;
@@ -80,10 +79,13 @@ function getState(_getWhat) {
         $.getJSON(_getWhat, function(_state) {
             if (_getWhat == "getplaylist") {
                 playList = _state;
+                log(LOG, "playList retrieved. length -> " + playList.length);
+
                 setupSearchAutoComplete();
                 populateSelectBox();
                 } else {
                         state = _state;
+                        log(LOG,"state retrieved");
                         log(DIR,state);
                         updateUI();
                         updateVolumeUI();
@@ -114,7 +116,7 @@ function setupVolumeControl() {
 
 function updateVolumeUI() {
     if (state.hasOwnProperty('volume')) {
-        log(LOG,"updateVolumeUI() -> " + state.volume);
+        log(LOG,"updateVolumeUI() state.volume -> " + state.volume);
     
         var red   = parseInt((state.volume * 2.55) / 16).toString(16);
         var green = parseInt((255 - state,volume * 1.27) / 16).toString(16);
@@ -237,7 +239,8 @@ function setupBodyKBEvents() {
 } // function bodyKBEvents(_event) {
 
 function getCurrentSongIndex() {
-    return state.songsPlayed[state.songsPlayed.length - 1];
+    if (state.hasOwnProperty("songsPlayed"))
+        return state.songsPlayed[state.songsPlayed.length - 1];
 }
 
 function updateUI() {
@@ -251,14 +254,14 @@ function updateUI() {
     $("#playlist>option:eq(" + getCurrentSongIndex() + ")").prop('selected', true);
     $("#popupdialog").css("display", "none");
     
-    if (state.hasOwnProperty('queueSong')) {
-        log(LOG,"popupdialog Queueing song #" + state.queueSong + " -> " + playList[state.queueSong]);
+    if (state.hasOwnProperty('popupDialog')) {
+        log(LOG,"state.popupDialog -> " + state.popupDialog);
         $("#popupdialog").css("display", "inline-block");
-        $("#popupdialog").html(playList[state.queueSong] + " queued.");
+        $("#popupdialog").html(state.popupDialog);
         $("#popupdialog").fadeOut(6000);
         
-        log(LOG,"removing state.queueSong from state");        
-        delete state.queueSong;
+        log(LOG,"removing state.popupDialog from state");        
+        delete state.popupDialog;
         } 
 
     if (state.mute) {
@@ -271,13 +274,13 @@ function updateUI() {
             else
                 $("#shuffleenabled").css("visibility", "hidden");
 
-    if (state.paused)
+    if (state.pause)
         $("#ispaused").attr("src","/images/ispaused.png");
             else
                 $("#ispaused").attr("src","/images/isplaying.png");
 
     if (!itsTheBlackBerry)
-        setupChart();
+        updateChart();
             else
                 $("#chart").css("display", "none");
 } // function updateUI() {
@@ -300,15 +303,17 @@ function setupBlackBerry() {
   //  $("body").css("margin-left","0px");
     $("body").css("text-align","left");
     //$("#searchinput").css("width","90%");
+    
+
     $("#playlist").css("width","100%");
 }
 
 function setupWebSocket() {
     log(LOG,"setupWebSocket()");
-     var client = new WebSocket(serverUrl,"winamp");
+     var client = new WebSocket("ws://winamp:6502","winamp");
 
     client.onmessage = function(_response) {
-        log(LOG,"ommessage state received");
+        log(LOG,"websocket data received");
         state = JSON.parse(_response.data).state;
         log(DIR,state);
         updateUI();
@@ -322,7 +327,7 @@ function charsAllowed(_value) {
 }
 
 function setupSearchAutoComplete() {
-    log(LOG,"setupSearchAutoComplete() playList.length -> " + playList.length);
+    log(LOG,"setupSearchAutoComplete()");
 
     $("#searchinput").focusin(function() {
         $("body").off("keypress");
@@ -395,12 +400,12 @@ function setupSearchAutoComplete() {
     }) // autocomplete({
 } //  setupSearchAutoComplete() {
 
-function setupChart() {
+function updateChart() {
     var barColors    = [];
     var barThickness = [];
     var maxPlayCount = 0;
 
-    log(LOG,"setupChart()");
+    log(LOG,"updateChart()");
     
     playCount.length = playList.length;
     playCount.fill(0);
@@ -425,17 +430,18 @@ function setupChart() {
     
     var customTooltips = function(_ttModel) {
         var ttElement = document.getElementById('chart-tooltip');
-        var innerHtml = "";
+        var innerHtml = "<table>";
 
         if (!ttElement) {
             log(LOG,"creating tooltip div")
             
             ttElement = document.createElement('div');
             ttElement.id = 'chart-tooltip';
-            ttElement.innerHTML = "<table>";
+            ttElement.innerHTML = innerHtml;
             this._chart.canvas.parentNode.appendChild(ttElement);
         } // if (!ttElement) {
 
+        // Hide if no tooltip
         if (this._active.length == 0) {
             ttElement.style.opacity = 0;
             return;
@@ -444,8 +450,7 @@ function setupChart() {
         popupSongIndex = this._active[0]._index;
 
         // Hide if no tooltip
-        if (!state.songsPlayed.includes(popupSongIndex) || (this._active.length == 0)) {
-            ttElement.style.opacity = 0;
+        if (!state.songsPlayed.includes(popupSongIndex)) {
             return;
         }
 
@@ -455,7 +460,6 @@ function setupChart() {
             ttElement.style.border = "1px solid #fd1";
             innerHtml += '<tr><th>Currently playing</th></tr>';
             innerHtml += '<tr><td>' + playList[popupSongIndex] + '</td></tr>';
-            ttElement.style.width = parseInt($(ttElement).css('width')) * 2;
             } else {
                     ttElement.style.color = "#0d0";
                     ttElement.style.border = "1px solid #0d0";
@@ -481,50 +485,29 @@ function setupChart() {
             }]
         },
         options: {
-            layout: {
-                padding: 10,
-            },
-            gridLines: {
-                display: false
-            },
-            animation: {
-                duration: 0
-            },
-            legend: {
-                position: 'bottom',
-                display: false
-            },                
+            legend: { display: false },
+            animation: { duration: 0 },               
             responsive: true,
-            aspectRatio: 15,  
+            aspectRatio: 15,
+            title: { display: false },            
             tooltips: {
-                        enabled: false, // disable on-canvas tooltips
-                        mode: 'nearest', //index point dataset nearest x
-                        position: 'nearest',
-                        intersect: false,
-                        bodyFontSize: 20,
-                        bodyFontFamily: 'hack',
-                        custom: customTooltips
-                    },
-                title: {
-                    display: false
-                },
-                scales: {  
-                    xAxes: [{
-                        ticks: {
-                            callback: function(_value, _index, _values) { return; }
-                        } // ticks: {
-                    }], // xAxes: [{
-                    yAxes: [{
-                        ticks: {
-                            min: 0,
-                            stepSize: 1,
-                            callback: function(_value, _index, _values) { return; }
-                    } // ticks: {
+                enabled: false, // disable on-canvas tooltips
+                mode: 'nearest', //index point dataset nearest x
+                position: 'nearest',
+                intersect: false,
+                custom: customTooltips
+            },
+            scales: {  
+                xAxes: [{
+                    ticks: { callback: function(_value, _index, _values) { return; } } 
+                }], 
+                yAxes: [{
+                    ticks: { callback: function(_value, _index, _values) { return; } } 
                 }] // yAxes: [{
             } // scales: { 
         } // options: {
     }); //  chart = new Chart(ctx, {
-} // function setupChart() {
+} // function updateChart() {
  
 function getSearchInputSongIndex() {
     for (var i = 0; i < playList.length; i++)

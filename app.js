@@ -10,21 +10,23 @@ const WSServer      = require('websocket').server;
 const Express       = require('express');
 const { execFile, readFile} = require('child_process');
 const App           = Express();
-const wsPort        = 6502;
-const serverUrl     = "ws://winamp:" + wsPort;
+const serverUrl     = "ws://winamp:6502";
 const playListFile  = "/home/ian/monday.pls";
 
-var playListFullPath    = [];
-var clientList  = [];
-var debug       = true;
-var LOG         = 0;
-var DIR         = 1;
-var volume      = 40;
+var playListFullPath = [];
+var clients = [];
+var debug   = true;
+var LOG     = 0;
+var DIR     = 1;
 
 var state = {
+    duration: 0,
+    timeRemaining: 0,
+    pause: false,
     shuffle: true,
-    songsPlayed: [],
-    mute: false
+    mute: false,
+    volume: 40,
+    songsPlayed: []
 };
 
 getPlayList();
@@ -32,15 +34,13 @@ setupExpress();
 setupWebsocket();
 setVolume();
 
-// turn shuffle on & start playing next song...
-// xmms will send newsong http request
-// which will setup the initial state of the server
+// turn shuffle on & start playing next song... xmms will
+// send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
 
 function connectXmmsToDarkice() {
     log(LOG,"connectXmmsToDarkice()");
     
-    // hook xmms output to darkice (icecast)
     execFile('jack_lsp',(_err,_stdio,_stderr) => {
         var lines            = _stdio.split('\n');
         var xmmsJackPorts    = [];
@@ -52,7 +52,7 @@ function connectXmmsToDarkice() {
 
             if (_line.includes("darkice"))
                 darkiceJackPorts.push(_line)
-            });
+        });
 
         execFile('jack_connect', [ darkiceJackPorts[0], xmmsJackPorts[0] ]);
         execFile('jack_connect', [ darkiceJackPorts[1], xmmsJackPorts[1] ]);
@@ -65,22 +65,21 @@ async function getState() {
     return new Promise(resolve => {
         setTimeout(() => {
             execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
-                    var args = _stdio.split(" ");
+                var args = _stdio.split(" ");
 
-                    state.duration = parseInt(args[0]);
-                    state.timeRemaining  = Math.abs(state.duration - parseInt(args[1]));
-                    state.volume = volume;
+                state.duration = parseInt(args[0]);
+                state.timeRemaining  = Math.abs(state.duration - parseInt(args[1]));
 
-                    log(DIR,state);
-                    resolve();               
+                log(DIR,state);
+                resolve();               
             });
         }, 100);
     });
 }
 
 function setVolume() {
-    log(LOG,"setVolume() volume -> " + volume + "% state.mute -> " + state.mute);
-    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', volume]);
+    log(LOG,"setVolume() state.volume -> " + state.volume + " state.mute -> " + state.mute);
+    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume]);
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
 }
 
@@ -91,9 +90,7 @@ function setupExpress() {
     App.engine('Pug', require('pug').__express)
     App.use(Express.static(path.join(__dirname, 'public')));
     App.use(Express.json());
-    App.use(Express.urlencoded({
-        extended: false
-    }));
+    App.use(Express.urlencoded( { extended: false } ));
 
     App.set('views', path.join(__dirname, 'views'));
     App.set('view engine', 'pug');
@@ -110,13 +107,12 @@ function setupExpress() {
     });
 
     App.get('/getplaylist', (_request, _response) => {
+        // load most current playlist
         getPlayList();
         
         var playList   = playListFullPath.map(function(_n) {
             return _n.split(/\/[a-z]\//i)[1].slice(0,-4);
         });
-
-        log(LOG,"Sending playlist. Length -> " + playList.length);
 
         _response.send(playList);
         _response.end();
@@ -131,65 +127,61 @@ function setupExpress() {
         switch (_request.url) {
             case "/next": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-f']);
-                // this is for so my bb
-                setTimeout(() => {
-                    _response.send(state);
-                    _response.end();
-                },400);
             break;
 
             case "/prev": // this will cause xmms to send newsong request to server
                 execFile('xmms', ['-r']);
-                // this is for so my bb
-                setTimeout(() => {
-                    _response.send(state);
-                    _response.end();
-                },400);
             break;
 
             case "/pause":
                 execFile('xmms', ['-t']);
-                state.paused = !state.paused;
+                state.pause = !state.pause;
                 await getState(); // update time in state
                 sendState(_request.socket.remoteAddress,'/pause');
-                _response.send(state);
-                _response.end();
             break;
 
             case "/shuffle":
                 execFile('xmms', ['-S']);
                 state.shuffle = !state.shuffle;
                 await getState(); // update time in state
-                sendState(_request.remoteAddress,'/shuffle');
-                _response.send(state);
-                _response.end();
+                sendState(_request.socket.remoteAddress,'/shuffle');
             break;
         } //switch (_request.url) {
+
+        _response.send(state);
+        _response.end();
     }); // App.get('/next|/prev|/pause|/shuffle', (_request, _response) => {
 
     // xmms new song playing...this request came from xmms
     App.get('/newsong/*', async (_request, _response) => {
-        state.paused = false;
+        var index = parseInt(_request.params[0] - 1);
 
-        if (parseInt(_request.params[0]) < playListFullPath.length - 1) {
-            state.songsPlayed.push(parseInt(_request.params[0] - 1)); // playlist mp3
+        state.pause = false;
+
+        if (index < playListFullPath.length - 1) {
+            log(LOG,"New song -> " + playListFullPath[index] + " index -> " + index);
+            state.songsPlayed.push(index); // playlist mp3
             } else { // queued mp3 at end of playlist
                     execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-
-                    for (var i = 0; i < playListFullPath.length; i++)
-                        if (playListFullPath[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
-                            state.songsPlayed.push(i);
-                            log(LOG,"Queued song title " + _stdio + " index -> " + i);
-                            }
-                        });
+                        for (var i = 0; i < playListFullPath.length; i++)
+                            if (playListFullPath[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
+                                state.songsPlayed.push(i);
+                                log(LOG,"Queued song index -> " + i + " " + _stdio);
+                                }
+                        }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
                     } //     } else {
 
         connectXmmsToDarkice();
         
-        await getState()
-        sendState(_request.remoteAddress,'newsong','/newsong/*');
-        _response.send(state);
-        _response.end();
+        await getState();
+
+        if (clients.length > 0)
+            sendState('SENDTOALL','/newsong/*'); // send new state to clients
+
+        setTimeout(() => {
+            _response.send(state);
+            _response.end();
+        },400);
     });
 
     App.get('/playsong/:index', (_request, _response) => { 
@@ -198,31 +190,31 @@ function setupExpress() {
         });
     });
 
-    App.get('/setvolume/:level', (_request,_response) => {
-        if (_request.params.level == 'volup')
-            volume++;
-                else if (_request.params.level == 'voldown')
-                    volume--;
-                        else if (_request.params.level == 'mute')
+    App.get('/setvolume/:volume', (_request,_response) => {
+        if (_request.params.volume == 'volup')
+             state.volume++;
+                else if (_request.params.volume == 'voldown')
+                     state.volume--;
+                        else if (_request.params.volume == 'mute')
                             state.mute = !state.mute;
                                 else 
-                                    volume = parseInt(_request.params.level);
+                                     state.volume = parseInt(_request.params.volume);
 
-        state.volume = volume;
         setVolume();
-        sendState(_request.socket.remoteAddress,'/setvolume/:level');
+        sendState(_request.socket.remoteAddress,'/setvolume/:volume');
         _response.send(state);
         _response.end();
     });
 
     App.get('/queuesong/:index', (_request, _response) => {
-        state.queueSong = parseInt(_request.params.index);
-        log(LOG,"queueing song #" + state.queueSong + " " + playListFullPath[state.queueSong]);
+        var index = parseInt(_request.params.index);
+  //      log(LOG,"queueing song #" + state.queueSong + " " + playListFullPath[state.queueSong]);
 
         // this adds it to the bottom of the playList & queues it
-        execFile("xmms", ['-Q',  playListFullPath[state.queueSong]], (_err,_stdio,_stderr) => {
+        execFile("xmms", ['-Q',  playListFullPath[index]], (_err,_stdio,_stderr) => {
+            state.popupDialog = playListFullPath[index].split(/\/[a-z]\//i)[1].slice(0,-4); + " queued."
             // display popup notification on clients
-            sendState(_request.remoteAddress,'queuesong');
+            sendState('SENDTOALL','/queuesong/' + index);
             _response.send(state); 
             _response.end();
         });
@@ -230,45 +222,42 @@ function setupExpress() {
 } // function setupExpress() {
 
 function sendState(_dontSendTo,_logMsg) {
-    log(LOG,"sendState(" + _dontSendTo + ", " + _logMsg + ") clientList.length -> " + clientList.length);
-        execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
-           var args = _stdio.split(" ");
+    log(LOG,"sendState(" + _dontSendTo + ", " + _logMsg + ")");
 
-            // sometimes xmms reports the timeRemaining > duration ...?
-            state.duration = parseInt(args[0]);
-            state.timeRemaining = args[1] > state.duration ?  state.duration : Math.abs(state.duration - args[1]);
+    if (clients.length == 0) 
+        return;
 
-            log(DIR,state);
+    execFile('qxmms', ['-lnS'],(_err,_stdio,_stderr) => {
+       var args = _stdio.split(" ");
 
-            for (var i = 0; i < clientList.length; i++) //{
-                    if (clientList[i].remoteAddress != _dontSendTo) {
-                        log(LOG,"Sending state to -> " + clientList[i].remoteAddress);
-                        clientList[i].send(JSON.stringify({state: state}));
-                        } else {
-                                log(LOG,"not sending state to -> " + clientList[i].remoteAddress);
-                                }
+        // sometimes xmms reports the timeRemaining > duration ...?
+        state.duration = parseInt(args[0]);
+        state.timeRemaining = args[1] > state.duration ?  state.duration : Math.abs(state.duration - args[1]);
 
-            if (state.hasOwnProperty('volume') ) {
-                log(LOG,"removing volume from state");
-                delete state.volume;
-            }
+        for (var i = 0; i < clients.length; i++) //{
+            if (clients[i].remoteAddress != _dontSendTo) {
+                log(LOG,"Sending state to -> " + clients[i].remoteAddress);
+                clients[i].send(JSON.stringify({state: state}));
+                } else {
+                        log(LOG,"not sending state to -> " + clients[i].remoteAddress);
+                        }
 
-            if (state.hasOwnProperty('queueSong')) {
-                log(LOG,"removing queueSong from state");
-                delete state.queueSong;
-            }
-        });
+        if (state.hasOwnProperty('popupDialog')) {
+            log(LOG,"removing popupDialog from state");
+            delete state.popupDialog;
+        }
+    });
 } // function sendState(_dontSendTo,_logMsg) {
 
 function setupWebsocket() {
-    log(LOG,"setting up websocket");
+    log(LOG,"setupWebsocket()");
 
     var wsHttp = Http.createServer((_request, _response) => {
         log(LOG,(new Date()) + ' Received request for ' + _request.url);
 
         _response.writeHead(404);
         _response.end();
-    }).listen(wsPort);
+    }).listen(6502);
 
     var wsServer = new WSServer({
         url: serverUrl,
@@ -277,7 +266,7 @@ function setupWebsocket() {
 
     wsServer.on('connect', async (_connection) => {
         log(LOG,"websocket new connection from -> " + _connection.remoteAddress);
-        clientList.push(_connection);
+        clients.push(_connection);
     });
 
     wsServer.on('request', (_request) => {
@@ -286,19 +275,15 @@ function setupWebsocket() {
     }); // wsServer.on('request', (_request) => {
 
     wsServer.on('close', (_connection) => {
-        log(LOG,"closing connection");
-        clientList = clientList.filter(function(el, idx, ar) {
+        clients = clients.filter(function(el, idx, ar) {
             return el.connected;
         });
 
         log(LOG,(new Date()) + " Peer " + _connection.remoteAddress + " disconnected.");
     }); //  connection.on('close', function(_connection) {+
-
-    log(LOG,"websocket listening on port " + wsPort);
 } // function setupWebsocket() {
 
 function getPlayList() {
-    var i = 0;
     /* xmms monday.pls file looks like this
     [playList]
     NumberOfEntries=5297
@@ -311,12 +296,14 @@ function getPlayList() {
             else 
                 throw new Error("Cannot find playlist " + playListFile);
 
+    playListFullPath.length = [];
+
     fp.forEach((_entry, _index) => {
         if (_entry.includes('File')) 
-            playListFullPath[i++] =  _entry.split('//')[1];
+            playListFullPath.push(_entry.split('//')[1]);
     });
 
-    log(LOG,playListFullPath.length + " songs in playlist file.");
+    log(LOG,"getPlayList() -> " + playListFullPath.length + " songs.");
 } // function getPlayList() {
 
 function log(_type,_msg) {
