@@ -17,7 +17,7 @@
     "websocket": "^1.0.30"
   },
   "devDependencies": {
-    "jest": "^24.9.0"
+    "jest": "^26.0.1"
   },
   "description": "Control your xmms player from anywhere.",
   "main": "app.js",

@@ -2,7 +2,7 @@ doctype html
 html
   head
     <meta charset="utf-8">
-    link(rel='favicon', sizes='64x64', href='favicon.ico')
+    link(rel='favicon', sizes='64x64', href='images/favicon.ico')
     style
         include ../public/stylesheets/jquery-ui.css
         include ../public/stylesheets/autocomplete.css
@@ -15,10 +15,11 @@ html
     script(src='javascripts/Chart.js')
 body
 <title id="title"></title>
+<div id="mutedialog"></div>
 <div id="popupdialog"></div>
 <div id="songtitle"></div>
 <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
-<img id="ispaused" src="images/isplaying.png">
+<img id="ispaused" src="images/playing.png">
 <div id="timeremaining"></div>
 <div id="volume" class="slider"></div>
 <img id="progressbar" src="images/progressbar49x17.png">
@@ -30,11 +31,11 @@ body
     <area id="shuffle" shape="rect" coords="280,150,359,176">
 </map>
 <div id="search">
-    <input type="text" id="searchinput" placeholder="Mp3 Search"  />
+    <input id="searchinput" type="text" placeholder="Mp3 Search"  />
     <button id="playsong">Play</button>
     <button id="queuesong">Queue</button>
-    <select id="playlist" size=20></select>
 </div>
+    <select id="playlist"></select>
 <div class="chart-container">
     <canvas id="chart"></canvas>
 </div>

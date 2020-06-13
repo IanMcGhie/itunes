@@ -9,9 +9,12 @@
 body {
     /* color: #0d0; */
     background: url(/images/space.png);
-    text-align: center;
+/*    text-align: center;*/
     font-family: "Hack";
     font-size: 16px;
+    width: 769px;
+    text-align: left;
+    
 /*    margin-left: auto;
     margin-right: auto;*/
 }
@@ -26,15 +29,21 @@ option {
 }
 
 strong {
-    color: #fd1;
+ 
 }
 
 table {
     text-align: center;
 }
 
+/*
 td {
     padding: 10px;
+}
+*/
+
+#chart {
+    display: none;
 }
 
 #chart-tooltip {
@@ -57,6 +66,7 @@ td {
 }
 
 #winamp {
+    padding-bottom: 0px;
     z-index: -1;
 }
 
@@ -122,22 +132,21 @@ td {
 #autocompleterow {
     text-align: center;
     font: inherit;
-
 }
 
 #playlist {
     font: inherit;
     color: inherit;
-    width: 60%;
 }
 
 #search {
-    padding: 20px;
+    padding: 10px;
+    color: inherit;
 }
 
 #searchinput {
-    margin-bottom: 25px;
-    width: 54%;  
+   /* margin-bottom: 25px;*/
+   width: 360px;
     font: inherit;
     text-align: left;
     background-color: #000;
@@ -159,6 +168,18 @@ td {
     cursor: pointer;
 }
 
+#mutedialog { 
+    padding: 20px;
+    position: fixed;
+    top: 45%;
+    color: #fd1;
+    border: 1px solid #fd1;
+    border-radius: 20px;
+    background: #000;
+    display: none;
+    z-index: 3;
+}
+
 #popupdialog { 
     padding: 20px;
     position: fixed;
@@ -167,6 +188,7 @@ td {
     border: 1px solid #fd1;
     border-radius: 20px;
     background: #000;
-    display: none;    
+    display: none;
     z-index: 3;
 }
+

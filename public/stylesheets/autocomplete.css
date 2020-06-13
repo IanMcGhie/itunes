@@ -3,9 +3,6 @@
     background: #030;
     color: #0f0;
     z-index: 1000;
-    /* font: 14px/22px "-apple-system", BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;*/
-    /*font-family: "Hack-Regular";*/
-    /*font-size: 12px;*/
     overflow: auto;
     box-sizing: border-box;
     border: 1px solid rgba(50, 50, 50, 0.6);
@@ -30,3 +27,6 @@
     cursor: pointer;
 }
 
+strong {
+    color: #ff0;
+}
