@@ -8,11 +8,9 @@
 
 body {
     background: url(/images/space.png);
-    
     font-family: "Hack";
-    font-size: 16px;
+    font-size: 20px;
     margin-left: 0px;
-/*    width: 769px;*/
     text-align: left;
 }
 
@@ -29,7 +27,7 @@ table {
     text-align: center;
 }
 
-#chartcontainer {
+#chart {
     display: none;
 }
 
@@ -129,7 +127,7 @@ table {
 #searchinput {
     margin-top: 10px;
     margin-bottom: 10px;
-    width: 360px;
+    width: 320px;
     font: inherit;
     text-align: left;
     background-color: #000;
