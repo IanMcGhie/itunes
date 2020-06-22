@@ -3,22 +3,17 @@
 // whatever node needs & a computer for this to work
 // 2. xmms preferences...general plugins...
 //    song change plugin...set command to
-//    curl -G winamp:3000/newsong/%f
-const Pug           = require('pug');
-const Http          = require('http');
-const Fs            = require("fs");
-const Readline      = require('readline');
-const WSServer      = require('websocket').server;
-const Express       = require('express');
-const { execFile, execFileSync, readFile} = require('child_process');
-const App           = Express();
-const serverUrl     = "ws://winamp:6502";
-const playListFile  = "/home/ian/monday.pls";
-const DEBUG         = true;
-const TEXT          = true;
-const DIR           = false;
+//    curl -G winamp:3000/newsong/%f &
+const { execFile } = require('child_process');
+const Express  = require('express');
+const App      = Express();
 
-var clients         = [];
+const playList = "/home/ian/monday.pls";
+const DEBUG    = true;
+const TEXT     = true;
+const DIR      = false;
+
+var clients    = [];
 var state = {
     duration: 0,
     timeRemaining: 0,
@@ -35,8 +30,7 @@ setupWebsocket();
 setVolume();
 getPlayList();
 
-// turn shuffle on & start playing next song... xmms will
-// send /newsong/# http request & setup the initial state
+// turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
 
 function getPlayList() {
@@ -48,42 +42,41 @@ function getPlayList() {
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
     log(TEXT, "getPlayList()");
-    
+    const Fs       = require("fs");
+    const Readline = require('readline');
+
     try {
-        Fs.watchFile(playListFile,  async (_event, _filename) => {
-           log(TEXT, "playList " + playListFile + " changed.");
+        Fs.watchFile(playList,  async (_event, _filename) => {
+           log(TEXT, "playList " + playList + " changed.");
            getPlayList();
         });
 
-        Fs.open(playListFile, 'r', async (_err, _fd) => {
-            log(TEXT,"playlist file opened");
+        const fileStream = Fs.createReadStream(playList);
+        const rl = Readline.createInterface({
+            input: fileStream,
+            crlfDelay: Infinity
+        });
 
-            if (_err) throw _err;
+        new Promise(async (resolve, reject) => {
+            state.playList = [];
+            state.songsPlayed = [];
+        
+            for await (const line of rl) {
+                try {
+                    if (line.includes('File')) 
+                        state.playList.push(line.split(/\/[a-z]\//i)[1].slice(0,-4));
+                } catch (_err) { 
+                                log(TEXT,"for await (const line of rl) error -> " + _err);
+                                }    
+            } // for await (const line of rl) {
 
-            const fileStream = Fs.createReadStream(playListFile);
-            const rl = Readline.createInterface({
-                input: fileStream,
-                crlfDelay: Infinity
-            });
-
-            let promise =  new Promise(async (resolve, reject) => {
-                state.playList = [];
-            
-                for await (const line of rl) {
-                    try {
-                        if (line.includes('File')) 
-                            state.playList.push(line.split(/\/[a-z]\//i)[1].slice(0,-4));
-                    } catch (_err) { 
-                                    log(TEXT,"for await (const line of rl) error -> " + _err);
-                                    }    
-                } // for await (const line of rl) {
-
-            log(TEXT, "resolved " + state.playList.length + " songs in playlist");
-            resolve(state.playList);
-            }); // let promise =  new Promise(async (resolve, reject) => {
-        }); // Fs.open(playListFile, 'r', (_err, _fd) => {
-    } catch (_err) { log(TEXT, "function getPlayList() -> " + _err); }
-}
+        log(TEXT, "resolved " + state.playList.length + " songs in playlist");
+        resolve(state.playList);
+        }); // let promise =  new Promise(async (resolve, reject) => {
+    } catch (_err) { 
+                    log(TEXT, "function getPlayList() -> " + _err); 
+                    }
+} // function getPlayList() {
 
 function connectXmmsToDarkice() {
     execFile('jack_lsp',(_err,_stdio,_stderr) => {
@@ -134,14 +127,15 @@ function setVolume() {
 
 function setupExpress() {
     log(TEXT,"setupExpress()");
-    var path = require('path');
-
+    const Pug  = require('pug');
+    const Path = require('path');
+     
     App.engine('Pug', require('pug').__express)
-    App.use(Express.static(path.join(__dirname, 'public')));
+    App.use(Express.static(Path.join(__dirname, 'public')));
     App.use(Express.json());
     App.use(Express.urlencoded( { extended: false } ));
 
-    App.set('views', path.join(__dirname, 'views'));
+    App.set('views', Path.join(__dirname, 'views'));
     App.set('view engine', 'pug');
 
     App.get('*', (_request, _response, _next) => {
@@ -178,10 +172,6 @@ function setupExpress() {
 
             case "getstate":
                 execFile('qxmms', ['-lnS'] , (_err,_stdio,_stderr) => {
-                    if (_request.params.hasOwnProperty('arg2'))
-                        if (_request.params.arg2 == 'init') 
-                            getPlayList();
-              
                     state.duration = parseInt(_stdio.toString().split(' ')[0]);
                     state.timeRemaining  = Math.abs(state.duration - parseInt(_stdio.toString().split(' ')[1]));
                     log(DIR, state);
@@ -232,8 +222,8 @@ function setupExpress() {
                                     state.songsPlayed.push(i);
                                     log(TEXT,"Queued song index -> " + i + " " + _stdio);
                                 } // if (playList[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
-                        }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-                } //     } else {
+                            }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
+                        } //     } else {
                     
                 connectXmmsToDarkice();
                 sendState('SENDTOALL','/newsong/' + index);
@@ -247,6 +237,8 @@ function setupExpress() {
 
 function setupWebsocket() {
     log(TEXT,"setupWebsocket()");
+    const Http     = require('http');
+    const WSServer = require('websocket').server;
 
     var wsHttp = Http.createServer((_request, _response) => {
         log(TEXT,'Received request for ' + _request.url + " returning 404");
@@ -256,7 +248,7 @@ function setupWebsocket() {
     }).listen(6502);
 
     var wsServer = new WSServer({
-        url: serverUrl,
+        url: "ws://localhost:6502",
         httpServer: wsHttp
     }); // var wsServer = new wsServer({
 

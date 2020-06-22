@@ -7,16 +7,12 @@
 }
 
 body {
-    /* color: #0d0; */
     background: url(/images/space.png);
-/*    text-align: center;*/
     font-family: "Hack";
     font-size: 16px;
-    width: 769px;
+    margin-left: 0px;
+/*    width: 769px;*/
     text-align: left;
-    
-/*    margin-left: auto;
-    margin-right: auto;*/
 }
 
 a {
@@ -28,25 +24,15 @@ option {
  
 }
 
-strong {
- 
-}
-
 table {
     text-align: center;
 }
 
-/*
-td {
-    padding: 10px;
-}
-*/
-
-#chart {
+#chartcontainer {
     display: none;
 }
 
-#chart-tooltip {
+#charttooltip {
     font-family: "Hack";
     font-size: 20px;
     margin-top: 150px;
@@ -84,7 +70,7 @@ td {
     margin-left: -410px;
     font-family: "DS-Regular";
     font-size: 40px;
-    z-index: 2;
+    z-index: 1;
 }
 
 #volume {
@@ -95,21 +81,21 @@ td {
     background-color: #0f0;
     width: 95px;
     height: 3px;
-    z-index: 2;
+    z-index: 1;
 }
 
 #progressbar {
     position: absolute;
     margin-top: 124px;
     margin-left: -450px;
-    z-index: 2;
+    z-index: 1;
 }
 
 #shuffleenabled {
     position: absolute;
     margin-top: 156px;
     margin-left: -184px;
-    z-index: 2;
+    z-index: 1;
 }
 
 .ui-slider .ui-slider-handle {
@@ -139,14 +125,10 @@ td {
     color: inherit;
 }
 
-#search {
-    padding: 10px;
-    color: inherit;
-}
-
 #searchinput {
-   /* margin-bottom: 25px;*/
-   width: 360px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 360px;
     font: inherit;
     text-align: left;
     background-color: #000;

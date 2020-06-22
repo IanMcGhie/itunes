@@ -4,13 +4,24 @@
 var TEXT          = true;
 var DIR           = false;
 var DEBUG         = true;
-var newSelect       = false;
-var popupSongIndex  = 0;
+var newSelect     = false;
+var popupSongIndex= 0;
+var state         = { };
 var chart;
-var state = {
-    playList: [],
-    songsPlayed: []
-};
+var showPlayed    = true;
+
+String.prototype.toMMSS = function() {
+   var minutes = parseInt(this / 60);
+   var seconds = this % 60;
+
+    if (minutes < 10) 
+        minutes = "0" + minutes;
+
+    if (seconds < 10)
+        seconds = "0" + seconds;
+  
+    return minutes + ":" + seconds;
+} // String.prototype.toMMSS = function () {
 
 $(document).ready(function() {
     var itsFirefox = typeof InstallTrigger !== 'undefined';
@@ -28,7 +39,7 @@ $(document).ready(function() {
     setupPlayListKBEvents();
     setupMouseEvents();
     setupVolumeControl();
-    setupTicker(250);
+    setupTicker();
     setupClock();
     document.body.style.color = "#0d0"; // set chart bar default color
 }); // $(document).ready(() => {
@@ -37,7 +48,7 @@ function setupClock() {
     log(TEXT,"setupClock()");
 
     setInterval(function() {
-        if (!state.pause && state.timeRemaining > 0) {
+        if (!state.pause && (state.timeRemaining / state.duration) > 0) {
             var margin = ((state.timeRemaining / state.duration) * -390) - 60;
 
             $("#progressbar").css("margin-left", margin);
@@ -48,31 +59,16 @@ function setupClock() {
     }, 1000); // setInterval(function() { 
 }
 
-function setupTicker(_delayMs) {
-    log(TEXT,"setupTicker(" +  _delayMs + ")");
+function setupTicker() {
+    log(TEXT,"setupTicker()");
 
     setInterval(function() {
         if ($("#title").text().length > 0)
-        //    if (state.hasOwnProperty('currentlyPlaying'))
-                if (state.hasOwnProperty('playList'))
-                    $("#title").text($("#title").text().slice(1));
-                        else
-                            $("#title").text(state.playList[state.songsPlayed[state.songsPlayed.length - 1]]);
-    }, _delayMs); // setInterval(function() {
-} // function setupTicker(_delayMs) {
-
-String.prototype.toMMSS = function() {
-   var minutes = parseInt(this / 60);
-   var seconds = this % 60;
-
-    if (minutes < 10) 
-        minutes = "0" + minutes;
-
-    if (seconds < 10)
-        seconds = "0" + seconds;
-  
-    return minutes + ":" + seconds;
-} // String.prototype.toMMSS = function () {
+            $("#title").text($("#title").text().slice(1));
+                else
+                    $("#title").text(state.playList[state.songsPlayed[state.songsPlayed.length - 1]]);
+    }, 250); // setInterval(function() {
+} // function setupTicker() {
 
 function sendCommand(_command) {
     log(TEXT,"sendCommand(" + _command + ")");
@@ -90,7 +86,7 @@ function sendCommand(_command) {
             drawChart();
         }
 
-        updateUI("sendCommand()");
+        updateUI("sendCommand(" + _command + ")");
     });
 }
 
@@ -156,7 +152,15 @@ function setupMouseEvents() {
     });
 
     $("#chart").click(function () {
-        $.get("playsong/" + popupSongIndex);
+        if (!showPlayed)
+            $.get("playsong/" + popupSongIndex);
+                else if (document.getElementById('charttooltip'))
+                        $.get("playsong/" + popupSongIndex);
+    });
+
+    $("#chart").contextmenu(function() {
+        showPlayed = !showPlayed;
+        drawChart();
     });
 } // function setupMouseEvents() {
 
@@ -247,7 +251,7 @@ function updateUI(_logMsg) {
 
     var currentSongTitle = state.playList[state.songsPlayed[state.songsPlayed.length - 1]];
 
-    $("#title").text(currentSongTitle);
+//    $("#title").text(currentSongTitle);
     $("#songtitle").text(currentSongTitle + " (" + state.duration.toString().toMMSS() + ")");
     $("#searchinput").val(currentSongTitle); 
     $("#playlist>option:eq(" + state.songsPlayed[state.songsPlayed.length - 1] + ")").prop("selected", true);
@@ -293,12 +297,13 @@ function setupWebSocket() {
 
      $("body").css("width","100%");
      $("body").css("text-align","center");
-     $("#searchinput").css("width","50%");
+     $("#searchinput").css("width","52%");
 
     client.onmessage = function(_response) {
         log(TEXT,"websocket data received");
         state = JSON.parse(_response.data).state;
         log(DIR, state);
+        $("#title").text(state.playList[state.songsPlayed[state.songsPlayed.length - 1]]);
         updateUI("websocket onmessage");
         drawChart();
     } //   client.onmessage = function(_response) {
@@ -408,49 +413,66 @@ function setupSearchAutoComplete() {
 
 function drawChart() {
     log(TEXT,"drawChart()");
-    var xLabels      = [];
+
     var barColors    = [];
     var barThickness = [];
     var chartData    = [];
     var lastLetter   = "";
     var lastIndex    = -1;
     var currentSongIndex = state.songsPlayed[state.songsPlayed.length - 1];
+    var yMax = 0;
 
-    $("#chart").css("display","inline-block");
+    $("#chartcontainer").css("display","inline-block");
     
     chartData.length = state.playList.length;
-    chartData.fill(1);
+    chartData.fill(0);
     barThickness.length = state.playList.length;
-
-    for (var i = 0; i < state.songsPlayed.length;i++) {
+    barThickness.fill(0);
+    
+    for (var i = 0; i < state.songsPlayed.length;i++) { 
         barColors[state.songsPlayed[i]] = document.body.style.color;
         chartData[state.songsPlayed[i]]++;
-        xLabels[state.songsPlayed[i]] = state.playList[state.songsPlayed[i]].slice(0,1);
+        barThickness[state.songsPlayed[i]] = 1;
+
+        if (yMax < chartData[state.songsPlayed[i]])
+            yMax = chartData[state.songsPlayed[i]];
     }
 
     // highlight currently playing
-    barColors[currentSongIndex] = "#fd1";
-    barThickness[currentSongIndex] = 2;
-    chartData[currentSongIndex]++;
+    barColors[currentSongIndex]     = "#fd1";
+    barThickness[currentSongIndex]  = 3;
+    chartData[currentSongIndex]     = yMax;
 
-//    if (chart)
-  //      chart.destroy();
+    if (!showPlayed) // show songs not played
+        for (var i = 0; i < state.playList.length;i++) 
+            if (chartData[i] == 0) {
+                barColors[i] = document.body.style.color;
+                chartData[i] = 1;
+                barThickness[i] = 1;
+            } else {
+                chartData[i] = 0;
+                chartData[currentSongIndex] = 2;
+            }
+
+    if (chart)
+        chart.destroy();
     
     var customTooltips = function(_ttModel) {
-        var ttElement = document.getElementById('chart-tooltip');
+        var ttElement = document.getElementById('charttooltip');
         var innerHtml = "<table>";
 
         // Hide if no tooltip
-        if (this._active.length == 0 || (!state.songsPlayed.includes(this._active[0]._index))) {
-            $("#chart-tooltip").remove();
-            return;
-        }
+        if (this._active.length == 0 || !state.songsPlayed.includes(this._active[0]._index)) 
+            if (showPlayed || this._active.length == 0) {
+                $("#charttooltip").remove();
+                return;
+            }
 
         if (!ttElement) {
             log(TEXT,"creating tooltip div")
 
             ttElement = document.createElement('div');
-            ttElement.id = 'chart-tooltip';
+            ttElement.id = 'charttooltip';
             ttElement.innerHTML = innerHtml;
             this._chart.canvas.parentNode.appendChild(ttElement);
         } // if (!ttElement) {
@@ -502,21 +524,21 @@ function drawChart() {
             },
             scales: {
                 xAxes: [{ 
-                       ticks: {
-                        autoSkip: false,
-                       fontColor: '#0d0',
-                       color: 'rgb(255,255,255)',
-                       fontSize: '16',
-                       callback: function(_value, _index, _values) { 
-                            if (state.playList[_index].slice(0,1) != lastLetter && state.songsPlayed.includes(_index) && (_index - lastIndex > 40)) {
-                                lastLetter = state.playList[_index].slice(0,1);
-                                lastIndex = _index;
-                                return lastLetter;
-                            }  
-                        }  // callback: function(_value, _index, _values) { 
-                    }
-                }], 
-            yAxes: [{ ticks: { callback: function(_value, _index, _values) { return; } } }]
+                        ticks: {
+                            autoSkip: false,
+                            fontColor: '#0d0',
+                            fontSize: '16',
+                            callback: function(_value, _index, _values) { 
+                                if (state.playList[_index].slice(0,1) != lastLetter && (_index - lastIndex > 40) || (_index == 0)) 
+                                    if (!showPlayed || state.songsPlayed.includes(_index)) {
+                                        lastLetter = state.playList[_index].slice(0,1);
+                                        lastIndex = _index;
+                                        return lastLetter;
+                                    }
+                            }  // callback: function(_value, _index, _values) { 
+                        }
+                    }], 
+                yAxes: [{ ticks: { callback: function(_value, _index, _values) { return; } } }]
             } // scales: { 
         } // options: {
     }); //  chart = new Chart(ctx, {
