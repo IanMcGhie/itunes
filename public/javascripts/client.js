@@ -529,8 +529,8 @@ function drawChart() {
                             fontColor: '#0d0',
                             fontSize: '16',
                             callback: function(_value, _index, _values) { 
-                                if (state.playList[_index].slice(0,1) != lastLetter && (_index - lastIndex > 40) || (_index == 0)) 
-                                    if (!showPlayed || state.songsPlayed.includes(_index)) {
+                                if ((state.playList[_index].slice(0,1) != lastLetter) && (_index - lastIndex > 40) || _index == 0) 
+                                    if (!showPlayed || state.songsPlayed.includes(_index) || _index == 0) {
                                         lastLetter = state.playList[_index].slice(0,1);
                                         lastIndex = _index;
                                         return lastLetter;
