@@ -11,14 +11,14 @@ const TEXT     = true;
 
 var clients    = [];
 var state = {
-    volume: 40,
     duration: 0,
-    timeRemaining: 0,
-    pause: false,
-    shuffle: true,
+    log: [],
     mute: false,
-    songsPlayed: [],
-    playList: []
+    pause: false,
+    playList: [],
+    progress: 0,
+    shuffle: true,
+    volume: 40
 };
 
 setupExpress();
@@ -29,7 +29,176 @@ getPlayList();
 // turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
 
-function getPlayList(_index) {
+function setupExpress() {
+    log(TEXT,"setupExpress()");
+
+    const Pug  = require('pug');
+    const Path = require('path');
+     
+    App.engine('Pug', require('pug').__express)
+    App.use(Express.static(Path.join(__dirname, 'public')));
+    App.use(Express.json());
+    App.use(Express.urlencoded( { extended: false } ));
+
+    App.set('views', Path.join(__dirname, 'views'));
+    App.set('view engine', 'pug');
+
+    App.get('*', (_request, _response, _next) => {
+        log(TEXT,_request.socket.remoteAddress + " -> GET " + _request.url);
+
+        _next();
+    });
+
+    App.get('/', (_request, _response) => {
+        _response.render('index');
+        _response.end();
+    });
+
+    App.get('/:arg1/:arg2?/:arg3?', async (_request, _response) => {
+        const remoteAddress = _request.socket.remoteAddress; 
+        const index = _request.params.arg2 - 1;
+
+        try { 
+            new Promise(async (_resolve, _reject) => { 
+                switch (_request.params.arg1) {
+                    case "prev":
+//                        await execFile('xmms', ['-r']);
+await execFile('xmms', ['-r']).then(() => { getState(); }).then(() => { sendState('SENDTOALL','new song'); });
+                    break;
+
+                    case "pause":
+                        execFile('xmms', ['-t']);
+                        state.pause = !state.pause;
+                        sendState(remoteAddress, _request.url);
+                    break;
+
+                    case "next":
+
+//await getState().then(() => { sendState('SENDTOALL','new song'); });
+await execFile('xmms', ['-f']).then(() => { getState(); }).then(() => { sendState('SENDTOALL','new song'); });
+
+//                        await execFile('xmms', ['-f']);
+                    break;          
+
+                    case "shuffle":
+                    case "shuffleenabled":
+                        execFile('xmms', ['-S']);
+                        state.shuffle = !state.shuffle;
+                        sendState(remoteAddress, _request.url);
+                    break;
+
+                    case "playsong":
+                        execFile('qxmms',['jump',parseInt(_request.params.arg2) + 1]);
+                    break;
+
+                    case "setvolume":
+                        if (_request.params.arg2 == 'volup')
+                             state.volume++;
+                                else if (_request.params.arg2 == 'voldown')
+                                     state.volume--;
+                                        else if (_request.params.arg2 == 'mute')
+                                            state.mute = !state.mute;
+                                                else 
+                                                     state.volume = parseInt(_request.params.arg2);
+                        setVolume();
+                        sendState(remoteAddress, '/setvolume/' + state.volume);
+                    break;
+
+                    case "queuesong":   // this adds it to the bottom of the playList & queues it
+                        const path  = getPlayList(index);
+
+                        execFile("xmms", ['-Q' , path], () => {
+                            log(TEXT, state.playList[index] + " queued wtf -> " + path);
+                            state.popupDialog = state.playList[index] + " queued.";
+                            sendState(remoteAddress, '/queuesong/' + index);
+                        });
+                    break;
+
+                    case "newsong":
+                        state.pause = false;
+
+                        if (index < state.playList.length) { // || (playList.length == 0)
+                            log(TEXT,"New song index -> " + index + " -> " + state.playList[index]);
+                            state.log.push(index);
+                        } else { // queued mp3 at end of playlist
+                                log(TEXT,"Queued song");
+                                execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
+                                    for (var i = 0; i < state.playList.length; i++)
+                                        if (state.playList[i].includes(_stdio.split(/\/[a-z]\//i)[1].slice(0,-5))) { // remove cr from _stdio
+                                            state.log.push(i);
+                                            log(TEXT,"Queued song index -> " + i + " " + _stdio);
+                                        } // if (playList[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
+                                    }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
+                                } //     } else {
+                
+                        await getState().then(() => { sendState('SENDTOALL','new song'); });
+
+                        connectXmmsToDarkice();
+                        log(TEXT,"log length -> " + state.log.length);
+                    break;
+                } // switch (_request.params.arg1) {
+
+            log(TEXT,"switch resolved()");
+            _resolve();
+            }); // new Promise(async (_resolve, _reject) => { 
+        } catch (_err) { log(TEXT, "newfunc err -> " + _err); } 
+        finally {
+            await getState().then(() => { 
+                log(TEXT,"finally state.progress -> " + state.progress);
+                log(TEXT,"finally state.log length -> " + state.log.length);
+                log(TEXT,"finally state.log current -> " + state.log[state.log.length - 1]);
+                _response.send(state)
+                _response.end();
+            });
+        }
+    }); // App.get('/:arg1/:arg2?/:arg3?', (_request, _response) => {
+} // function setupExpress() {
+
+function setupWebsocket() {
+    log(TEXT,"setupWebsocket()");
+    const Http     = require('http');
+    const WSServer = require('websocket').server;
+
+    const wsHttp = Http.createServer((_request, _response) => {
+        log(TEXT,'Received request for ' + _request.url + " returning 404");
+
+        _response.writeHead(404);
+        _response.end();
+    }).listen(6502);
+
+    const wsServer = new WSServer({
+        url: "ws://localhost:6502",
+        httpServer: wsHttp
+    }); 
+
+    wsServer.on('connect', (_connection) => {
+        log(TEXT,"websocket new connection from -> " + _connection.remoteAddress);
+        clients.push(_connection);
+    });
+
+    wsServer.on('request', (_request) => {
+        log(TEXT,"websocket request -> " + _request.resource + " from -> " + _request.remoteAddress);
+        _request.accept('winamp', _request.origin);
+    }); // wsServer.on('request', (_request) => {
+
+    wsServer.on('close', (_connection) => {
+        clients = clients.filter((el, idx, ar) => {
+            return el.connected;
+        });
+
+        log(TEXT,"Peer " + _connection.remoteAddress + " disconnected.");
+    }); //  connection.on('close', (_connection) => {
+} // function setupWebsocket() {
+
+function setVolume() {
+    log(TEXT,"setVolume() state.volume -> " + state.volume + " state.mute -> " + state.mute);
+    
+    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume]);
+    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
+}
+
+async function getPlayList(_index) {
+    log(TEXT, "getPlayList(" + _index + ")");
     /* xmms monday.pls file looks like this
     [playList]
     NumberOfEntries=5297
@@ -37,17 +206,19 @@ function getPlayList(_index) {
     File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
-    log(TEXT, "getPlayList(" + _index + ")");
     const Fs       = require("fs");
     const Readline = require('readline');
-
-    var currentLine = 0;
+    const currentLine = 0;
 
     try {
-        Fs.watchFile(playList,  async (_event, _filename) => {
-           log(TEXT, "playList " + playList + " changed.");
-           getPlayList();
-        });
+        Fs.watchFile(playList, (_event, _filename) => {
+            new Promise(async  (_resolve, _reject) => {
+                await getPlayList().then(() => {
+                    log(TEXT, "playlist changed length -> " + state.playList.length);
+                    _resolve();
+                });
+            });
+        }); // Fs.watchFile(playList, (_event, _filename) => {
 
         const fileStream = Fs.createReadStream(playList);
         const rl = Readline.createInterface({
@@ -55,35 +226,37 @@ function getPlayList(_index) {
             crlfDelay: Infinity
         });
 
-        new Promise(async (resolve, reject) => {
-            state.playList = [];
-            state.songsPlayed = [];
+        let promise = new Promise(async (_resolve, _reject) => {
+            if (_index == undefined) {
+                state.playList = [];
+                state.log = [];
 
-            for await (const line of rl) 
-                if (_index == undefined)
+                for await (const line of rl) 
                     try {
                         if (line.includes('File')) 
                             state.playList.push(line.split(/\/[a-z]\//i)[1].slice(0,-4));
                     } catch (_err) { log(TEXT,"for await (const line of rl) error -> " + _err); }
-
-            if (_index > 0) 
+            } else 
                 for await (const line of rl)
                     if (_index == currentLine++) {
                         log(TEXT,"returning -> " + line.split(/=/)[1]);
                         return line.split(/=/)[1];
                     }
-                    
+                   
         log(TEXT, "resolved " + state.playList.length + " songs in playlist");
-        resolve(state.playList);
-        }); // let promise =  new Promise(async (resolve, reject) => {
-    } catch (_err) { log(TEXT, "function getPlayList() -> " + _err); }
+
+        await getState().then(() => { sendState('SENDTOALL','playlist updated'); });
+
+        _resolve();
+        }); // let promise = new Promise(async (_resolve, _reject) => {
+    } catch (_err) { log(TEXT, "function getPlayList() error -> " + _err); }
 } // function getPlayList() {
 
 function connectXmmsToDarkice() {
     execFile('jack_lsp',(_err,_stdio,_stderr) => {
-        var lines            = _stdio.split('\n');
-        var xmmsJackPorts    = [];
-        var darkiceJackPorts = [];
+        const lines            = _stdio.split('\n');
+        const xmmsJackPorts    = [];
+        const darkiceJackPorts = [];
 
         lines.forEach (_line => {
             if (_line.includes('xmms')) 
@@ -98,182 +271,45 @@ function connectXmmsToDarkice() {
     });
 }
 
+async function getState() {
+    log(TEXT,"getState()");
+
+    try {
+        return new Promise(  (_resolve, _reject) => {
+            execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+                const args = _stdio.split(" ");
+
+                state.duration = parseInt(args[0]);
+                state.progress = parseInt(args[1]);
+
+                log(TEXT,"getState() resolved duration -> " + state.duration);
+                log(TEXT,"getState() resolved progress -> " + state.progress);
+
+                _resolve();
+            }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+        }); // new Promise(async (_resolve, _reject) => {
+    } catch (_err) { log(TEXT,"getState() err -> " + _err)}
+}
+
 function sendState(_dontSendTo, _logMsg) {
     log(TEXT,"sendState(" + _dontSendTo + ", " + _logMsg + ")");
     
-    execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
-        var args = _stdio.split(" ");
+    if (clients.length == 0) {
+        log(TEXT,"sendState() no connections... returning");
+        return;
+    }
 
-        state.duration = parseInt(args[0]);
-        state.timeRemaining = Math.abs(state.duration - parseInt(args[1])) - 1;
+    log(DIR, state);
 
-        log(DIR, state);
+    for (var i = 0; i < clients.length; i++) 
+        if (clients[i].remoteAddress != _dontSendTo) {
+            log(TEXT,"Sending state to -> " + clients[i].remoteAddress);
+            clients[i].send(JSON.stringify({state: state}));
+            } else 
+                    log(TEXT,"NOT sending state to -> " + clients[i].remoteAddress);
 
-        for (var i = 0; i < clients.length; i++) 
-            if (clients[i].remoteAddress != _dontSendTo) {
-                log(TEXT,"Sending state to -> " + clients[i].remoteAddress);
-                clients[i].send(JSON.stringify({state: state}));
-                } else 
-                        log(TEXT,"NOT sending state to -> " + clients[i].remoteAddress);
-    
-        delete state.popupDialog;
-    });
+    delete state.popupDialog;
 }
-
-function setVolume() {
-    log(TEXT,"setVolume() state.volume -> " + state.volume + " state.mute -> " + state.mute);
-    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume]);
-    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
-}
-
-function setupExpress() {
-    log(TEXT,"setupExpress()");
-    const Pug  = require('pug');
-    const Path = require('path');
-     
-    App.engine('Pug', require('pug').__express)
-    App.use(Express.static(Path.join(__dirname, 'public')));
-    App.use(Express.json());
-    App.use(Express.urlencoded( { extended: false } ));
-
-    App.set('views', Path.join(__dirname, 'views'));
-    App.set('view engine', 'pug');
-
-    App.get('*', (_request, _response, _next) => {
-        log(TEXT,_request.socket.remoteAddress + " -> GET " + _request.url);
-        _next();
-    });
-
-    App.get('/', (_request, _response) => {
-        _response.render('index');
-        _response.end();
-    });
-
-    App.get('/:arg1/:arg2?/:arg3?',(_request, _response) => {
-        switch (_request.params.arg1) {
-            case "prev":
-                execFile('xmms', ['-r']);
-            break;
-
-            case "pause":
-                execFile('xmms', ['-t']);
-                state.pause = !state.pause;
-                sendState("", _request.url);
-            break;
-
-            case "next":
-                execFile('xmms', ['-f']);
-            break;           
-
-            case "shuffle":
-                execFile('xmms', ['-S']);
-                state.shuffle = !state.shuffle;
-                sendState(_request.socket.remoteAddress, _request.url);
-            break;
-
-            case "getstate":
-                execFile('qxmms', ['-lnS'] , (_err,_stdio,_stderr) => {
-                    var args = _stdio.split(" ");
-
-                    state.duration = parseInt(args[0]);
-                    state.timeRemaining  = Math.abs(state.duration - parseInt(args[1]) - 1);
-                    log(DIR, state);
-                });
-            break;
-
-            case "playsong":
-                execFile('qxmms',['jump',parseInt(_request.params.arg2) + 1]);
-            break;
-
-            case "setvolume":
-                if (_request.params.arg2 == 'volup')
-                     state.volume++;
-                        else if (_request.params.arg2 == 'voldown')
-                             state.volume--;
-                                else if (_request.params.arg2 == 'mute')
-                                    state.mute = !state.mute;
-                                        else 
-                                             state.volume = parseInt(_request.params.arg2);
-                setVolume();
-                sendState(_request.socket.remoteAddress, '/setvolume/' + state.volume);
-            break;
-
-            case "queuesong":   // this adds it to the bottom of the playList & queues it
-                var index = parseInt(_request.params.arg2);
-                var path  = getPlayList(index);
-
-                execFile("xmms", ['-Q' , path])
-
-                setTimeout(function () {
-                    log(TEXT, state.playList[index] + " queued wtf -> " + path);
-                    state.popupDialog = state.playList[index] + " queued.";
-                    sendState(_request.socket.remoteAddress, '/queuesong/' + index);
-                }, 200);
-            break;
-
-            case "newsong":
-                var index = parseInt(_request.params.arg2) - 1;
-
-                state.pause = false;
-
-                if (index < state.playList.length) { // || (playList.length == 0)
-                    log(TEXT,"New song index -> " + index + " -> " + state.playList[index]);
-                    state.songsPlayed.push(index);
-                } else { // queued mp3 at end of playlist
-                        execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-                            for (var i = 0; i < state.playList.length; i++)
-                                if (state.playList[i].includes(_stdio.split(/\/[a-z]\//i)[1].slice(0,-5))) { // remove cr from _stdio
-                                    state.songsPlayed.push(i);
-                                    log(TEXT,"Queued song index -> " + i + " " + _stdio);
-                                } // if (playList[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
-                            }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-                        } //     } else {
-                    
-                connectXmmsToDarkice();
-                sendState('SENDTOALL','/newsong/' + index);
-            break;
-        } // switch (_request.params.arg1) {
-
-        _response.send(state)
-        _response.end();
-    }); // App.get('/:arg1/:arg2?/:arg3?', (_request, _response) => {
-} // function setupExpress() {
-
-function setupWebsocket() {
-    log(TEXT,"setupWebsocket()");
-    const Http     = require('http');
-    const WSServer = require('websocket').server;
-
-    var wsHttp = Http.createServer((_request, _response) => {
-        log(TEXT,'Received request for ' + _request.url + " returning 404");
-
-        _response.writeHead(404);
-        _response.end();
-    }).listen(6502);
-
-    var wsServer = new WSServer({
-        url: "ws://localhost:6502",
-        httpServer: wsHttp
-    }); // var wsServer = new wsServer({
-
-    wsServer.on('connect', (_connection) => {
-        log(TEXT,"websocket new connection from -> " + _connection.remoteAddress);
-        clients.push(_connection);
-    });
-
-    wsServer.on('request', (_request) => {
-        log(TEXT,"websocket request -> " + _request.resource + " from -> " + _request.remoteAddress);
-        _request.accept('winamp', _request.origin);
-    }); // wsServer.on('request', (_request) => {
-
-    wsServer.on('close', (_connection) => {
-        clients = clients.filter(function(el, idx, ar) {
-            return el.connected;
-        });
-
-        log(TEXT,"Peer " + _connection.remoteAddress + " disconnected.");
-    }); //  connection.on('close', function(_connection) {+
-} // function setupWebsocket() {
 
 function log(_type,_msg) {
     if (DEBUG)
