@@ -3,14 +3,15 @@
 // 2. xmms preferences...general plugins...song change plugin...set command to curl -G winamp:3000/newsong/%f &
 const { execFile } = require('child_process');
 const Express  = require('express');
+const Fs       = require("fs");
 const App      = Express();
 const playList = "/home/ian/monday.pls";
 const DIR      = false;
 const DEBUG    = true;
 const TEXT     = true;
 
-var clients    = [];
-var state = {
+let clients    = [];
+let state = {
     duration: 0,
     log: [],
     mute: false,
@@ -25,6 +26,8 @@ setupExpress();
 setupWebsocket();
 setVolume();
 getPlayList();
+
+Fs.watchFile(playList, () => { getPlayList() } ); 
 
 // turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
@@ -45,7 +48,6 @@ function setupExpress() {
 
     App.get('*', (_request, _response, _next) => {
         log(TEXT,_request.socket.remoteAddress + " -> GET " + _request.url);
-
         _next();
     });
 
@@ -56,35 +58,28 @@ function setupExpress() {
 
     App.get('/:arg1/:arg2?/:arg3?', async (_request, _response) => {
         const remoteAddress = _request.socket.remoteAddress; 
-        const index = _request.params.arg2 - 1;
+        let index = parseInt(_request.params.arg2);
 
         try { 
-            new Promise(async (_resolve, _reject) => { 
+            return new Promise(async (_resolve, _reject) => { 
                 switch (_request.params.arg1) {
                     case "prev":
-//                        await execFile('xmms', ['-r']);
-await execFile('xmms', ['-r']).then(() => { getState(); }).then(() => { sendState('SENDTOALL','new song'); });
+                        execFile('xmms', ['-r']);
                     break;
 
                     case "pause":
                         execFile('xmms', ['-t']);
                         state.pause = !state.pause;
-                        sendState(remoteAddress, _request.url);
                     break;
 
                     case "next":
-
-//await getState().then(() => { sendState('SENDTOALL','new song'); });
-await execFile('xmms', ['-f']).then(() => { getState(); }).then(() => { sendState('SENDTOALL','new song'); });
-
-//                        await execFile('xmms', ['-f']);
+                        execFile('xmms', ['-f']);
                     break;          
 
                     case "shuffle":
                     case "shuffleenabled":
                         execFile('xmms', ['-S']);
                         state.shuffle = !state.shuffle;
-                        sendState(remoteAddress, _request.url);
                     break;
 
                     case "playsong":
@@ -101,37 +96,37 @@ await execFile('xmms', ['-f']).then(() => { getState(); }).then(() => { sendStat
                                                 else 
                                                      state.volume = parseInt(_request.params.arg2);
                         setVolume();
-                        sendState(remoteAddress, '/setvolume/' + state.volume);
                     break;
 
                     case "queuesong":   // this adds it to the bottom of the playList & queues it
-                        const path  = getPlayList(index);
-
-                        execFile("xmms", ['-Q' , path], () => {
-                            log(TEXT, state.playList[index] + " queued wtf -> " + path);
-                            state.popupDialog = state.playList[index] + " queued.";
-                            sendState(remoteAddress, '/queuesong/' + index);
-                        });
+                            await getPlayList(index).then((_path) => { // getting this to work.... really hurt                            
+                                if (_request.params.arg1 == 'queuesong') {
+                                    log(TEXT, state.playList[index] + " queued");
+                                    execFile('xmms', ['-Q',_path]);
+                                    state.popupDialog = state.playList[_request.params.arg2] + " queued";
+                                    sendState(remoteAddress,'finally queuesong -> ' + _request.params.arg1 + " index -> " + _request.params.arg2 + " title -> " + state.playList[_request.params.arg2]); 
+                                    _resolve();
+                                } // if (_request.params.arg1 == 'queuesong') {
+                            }); // await getPlayList(index).then((_path) => {
                     break;
 
                     case "newsong":
+                        index--;
                         state.pause = false;
-
+                        
                         if (index < state.playList.length) { // || (playList.length == 0)
                             log(TEXT,"New song index -> " + index + " -> " + state.playList[index]);
                             state.log.push(index);
                         } else { // queued mp3 at end of playlist
                                 log(TEXT,"Queued song");
                                 execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-                                    for (var i = 0; i < state.playList.length; i++)
+                                    for (let i = 0; i < state.playList.length; i++)
                                         if (state.playList[i].includes(_stdio.split(/\/[a-z]\//i)[1].slice(0,-5))) { // remove cr from _stdio
                                             state.log.push(i);
                                             log(TEXT,"Queued song index -> " + i + " " + _stdio);
                                         } // if (playList[i].includes(_stdio.slice(0,-1))) { // remove cr from _stdio
                                     }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
                                 } //     } else {
-                
-                        await getState().then(() => { sendState('SENDTOALL','new song'); });
 
                         connectXmmsToDarkice();
                         log(TEXT,"log length -> " + state.log.length);
@@ -143,14 +138,26 @@ await execFile('xmms', ['-f']).then(() => { getState(); }).then(() => { sendStat
             }); // new Promise(async (_resolve, _reject) => { 
         } catch (_err) { log(TEXT, "newfunc err -> " + _err); } 
         finally {
-            await getState().then(() => { 
+            await getState('finally').then(async () => {
+                log(TEXT,"finally _request.params.arg1 -> " + _request.params.arg1);
                 log(TEXT,"finally state.progress -> " + state.progress);
                 log(TEXT,"finally state.log length -> " + state.log.length);
                 log(TEXT,"finally state.log current -> " + state.log[state.log.length - 1]);
-                _response.send(state)
-                _response.end();
-            });
-        }
+
+                if (_request.params.arg1 == 'newsong')
+                    sendState('SENDTOALL','finally -> ' + _request.params.arg1); 
+                    else
+                        if ((_request.params.arg1 != 'getplaylist') || (_request.params.arg1 != 'queuesong')) 
+                            sendState(remoteAddress,'finally -> ' + _request.params.arg1); 
+                            setTimeout(function() { 
+                                log(TEXT,"sending bb state");
+                                log(DIR,state);
+                                log(TEXT,"\n---------------------------\n\n");
+                                _response.send(state);
+                                _response.end();
+                            },250);
+                        }); // await getState('finally').then(() => { 
+        } // finally {
     }); // App.get('/:arg1/:arg2?/:arg3?', (_request, _response) => {
 } // function setupExpress() {
 
@@ -179,7 +186,7 @@ function setupWebsocket() {
     wsServer.on('request', (_request) => {
         log(TEXT,"websocket request -> " + _request.resource + " from -> " + _request.remoteAddress);
         _request.accept('winamp', _request.origin);
-    }); // wsServer.on('request', (_request) => {
+    });
 
     wsServer.on('close', (_connection) => {
         clients = clients.filter((el, idx, ar) => {
@@ -206,20 +213,10 @@ async function getPlayList(_index) {
     File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
     File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
     */
-    const Fs       = require("fs");
     const Readline = require('readline');
-    const currentLine = 0;
 
     try {
-        Fs.watchFile(playList, (_event, _filename) => {
-            new Promise(async  (_resolve, _reject) => {
-                await getPlayList().then(() => {
-                    log(TEXT, "playlist changed length -> " + state.playList.length);
-                    _resolve();
-                });
-            });
-        }); // Fs.watchFile(playList, (_event, _filename) => {
-
+        let line = 2;
         const fileStream = Fs.createReadStream(playList);
         const rl = Readline.createInterface({
             input: fileStream,
@@ -227,28 +224,38 @@ async function getPlayList(_index) {
         });
 
         let promise = new Promise(async (_resolve, _reject) => {
+            let currentLine = 1;
+
             if (_index == undefined) {
                 state.playList = [];
                 state.log = [];
 
-                for await (const line of rl) 
+                for await (line of rl) 
                     try {
                         if (line.includes('File')) 
                             state.playList.push(line.split(/\/[a-z]\//i)[1].slice(0,-4));
                     } catch (_err) { log(TEXT,"for await (const line of rl) error -> " + _err); }
-            } else 
-                for await (const line of rl)
-                    if (_index == currentLine++) {
-                        log(TEXT,"returning -> " + line.split(/=/)[1]);
-                        return line.split(/=/)[1];
-                    }
-                   
+            } else { // if (_index == undefined) {
+                    _index+=3;
+                    try {
+                        for await (line of rl) {
+                            if (_index == currentLine++) {
+                                log(TEXT,"resolved queueing -> " + line.split(/=/)[1]);
+                                execFile('xmms', ['-Q',line.split(/=/)[1]]);
+                            }
+                        } // for await (line of rl) {
+                    } catch (_err) { log(TEXT,"for await (const line of rl) error -> " + _err); }
+                } // } else { // if (_index == undefined) {
+               
         log(TEXT, "resolved " + state.playList.length + " songs in playlist");
 
-        await getState().then(() => { sendState('SENDTOALL','playlist updated'); });
-
+        await getState('getPlayList(' + _index + ')').then(
+              () => {
+                    if (_index != undefined)
+                        sendState('SENDTOALL','queuesong');
+                    });
         _resolve();
-        }); // let promise = new Promise(async (_resolve, _reject) => {
+      }); // let promise = new Promise(async (_resolve, _reject) => {
     } catch (_err) { log(TEXT, "function getPlayList() error -> " + _err); }
 } // function getPlayList() {
 
@@ -271,8 +278,8 @@ function connectXmmsToDarkice() {
     });
 }
 
-async function getState() {
-    log(TEXT,"getState()");
+async function getState(_logMsg) {
+    log(TEXT,"getState(" + _logMsg + ")");
 
     try {
         return new Promise(  (_resolve, _reject) => {
@@ -282,33 +289,34 @@ async function getState() {
                 state.duration = parseInt(args[0]);
                 state.progress = parseInt(args[1]);
 
-                log(TEXT,"getState() resolved duration -> " + state.duration);
-                log(TEXT,"getState() resolved progress -> " + state.progress);
+                log(TEXT,"getState(" + _logMsg + ") resolved duration -> " + state.duration);
+                log(TEXT,"getState(" + _logMsg + ") resolved progress -> " + state.progress);
 
                 _resolve();
             }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
         }); // new Promise(async (_resolve, _reject) => {
-    } catch (_err) { log(TEXT,"getState() err -> " + _err)}
+    } catch (_err) { log(TEXT,"getState(" + _logMsg + ") err -> " + _err)}
 }
 
 function sendState(_dontSendTo, _logMsg) {
     log(TEXT,"sendState(" + _dontSendTo + ", " + _logMsg + ")");
     
-    if (clients.length == 0) {
-        log(TEXT,"sendState() no connections... returning");
+    if (clients.length == 0) 
         return;
-    }
 
     log(DIR, state);
 
-    for (var i = 0; i < clients.length; i++) 
+    for (let i = 0; i < clients.length; i++) 
         if (clients[i].remoteAddress != _dontSendTo) {
             log(TEXT,"Sending state to -> " + clients[i].remoteAddress);
             clients[i].send(JSON.stringify({state: state}));
             } else 
                     log(TEXT,"NOT sending state to -> " + clients[i].remoteAddress);
 
-    delete state.popupDialog;
+    if (state.hasOwnProperty('popupDialog')) {
+        log(TEXT,"removing popupDialog from state");
+        delete state.popupDialog;
+    }
 }
 
 function log(_type,_msg) {

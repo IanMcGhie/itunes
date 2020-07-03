@@ -51,27 +51,35 @@ table {
     font-weight: bold;
 }
 
+#winampdiv {
+    padding: 0px;
+    margin: 0px;
+
+}
+
 #winamp {
     width: 360px;
     height: 200px;
-    padding-bottom: 0px;
+    padding: 0px;
+    margin: 0px;
     z-index: -1;
+
 }
 
 #ispaused {
     position: absolute;
     margin-left: -320px;
-    margin-top: 48px;
+    margin-top: 51px;
     z-index: 1;
 }
 
 #clock {
     position: absolute;
     display: inline-block;
-    margin-top: 40px;
-    margin-left: -310px;
+    margin-top: 44px;
+    margin-left: -308px;
     font-family: "DS-Regular";
-    font-size: 30px;
+    font-size: 29px;
     z-index: 1;
 }
 
@@ -79,7 +87,7 @@ table {
     display: inline-block;
     position: absolute;
     margin-top: 108px;
-    margin-left: -215px;
+    margin-left: -220px;
     background-color: #0f0;
     width: 80px;
     height: 3px;
@@ -89,14 +97,13 @@ table {
 #progressbar {
     position: absolute;
     margin-top: 124px;
-    margin-left: -350px;
     z-index: 1;
 }
 
 #shuffleenabled {
     position: absolute;
     margin-top: 158px;
-    margin-left: -140px;
+    margin-left: -147px;
     z-index: 1;
 }
 
@@ -152,10 +159,12 @@ table {
     cursor: pointer;
 }
 
-#mutedialog { 
-    padding: 20px;
-    position: fixed;
+#mutedialog,#popupdialog { 
     top: 45%;
+    padding: 20px;
+    position: absolute;
+    margin-left: auto;
+    margin-right: auto;
     color: #fd1;
     border: 1px solid #fd1;
     border-radius: 20px;
@@ -163,16 +172,3 @@ table {
     display: none;
     z-index: 3;
 }
-
-#popupdialog { 
-    padding: 20px;
-    position: fixed;
-    top: 45%;
-    color: #fd1;
-    border: 1px solid #fd1;
-    border-radius: 20px;
-    background: #000;
-    display: none;
-    z-index: 3;
-}
-
