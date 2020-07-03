@@ -56,7 +56,7 @@ function setupExpress() {
         _response.end();
     });
 
-    App.get('/:arg1/:arg2?/:arg3?', async (_request, _response) => {
+    App.get('/:arg1/:arg2?', async (_request, _response) => {
         const remoteAddress = _request.socket.remoteAddress; 
         let index = parseInt(_request.params.arg2);
 
@@ -98,23 +98,23 @@ function setupExpress() {
                         setVolume();
                     break;
 
-                    case "queuesong":   // this adds it to the bottom of the playList & queues it
-                            await getPlayList(index).then((_path) => { // getting this to work.... really hurt                            
-                                if (_request.params.arg1 == 'queuesong') {
-                                    log(TEXT, state.playList[index] + " queued");
-                                    execFile('xmms', ['-Q',_path]);
-                                    state.popupDialog = state.playList[_request.params.arg2] + " queued";
-                                    sendState(remoteAddress,'finally queuesong -> ' + _request.params.arg1 + " index -> " + _request.params.arg2 + " title -> " + state.playList[_request.params.arg2]); 
-                                    _resolve();
-                                } // if (_request.params.arg1 == 'queuesong') {
-                            }); // await getPlayList(index).then((_path) => {
+                    case "queuesong":                                           // this adds it to the...
+                        await getPlayList(index).then((_path) => {              // bottom of the playList
+                            if (_request.params.arg1 == 'queuesong') {          // & queues it...
+                                log(TEXT, state.playList[index] + " queued");   // getting this to work....
+                                execFile('xmms', ['-Q',_path]);                 // * really hurt *
+                                state.popupDialog = state.playList[_request.params.arg2] + " queued";
+                                sendState(remoteAddress,'finally queuesong -> ' + _request.params.arg1 + " index -> " + _request.params.arg2 + " title -> " + state.playList[_request.params.arg2]); 
+                                _resolve();
+                            } // if (_request.params.arg1 == 'queuesong') {
+                        }); // await getPlayList(index).then((_path) => {
                     break;
 
                     case "newsong":
                         index--;
                         state.pause = false;
                         
-                        if (index < state.playList.length) { // || (playList.length == 0)
+                        if (index < state.playList.length) { 
                             log(TEXT,"New song index -> " + index + " -> " + state.playList[index]);
                             state.log.push(index);
                         } else { // queued mp3 at end of playlist
@@ -133,32 +133,30 @@ function setupExpress() {
                     break;
                 } // switch (_request.params.arg1) {
 
-            log(TEXT,"switch resolved()");
-            _resolve();
-            }); // new Promise(async (_resolve, _reject) => { 
-        } catch (_err) { log(TEXT, "newfunc err -> " + _err); } 
-        finally {
-            await getState('finally').then(async () => {
+            await getState('finally').then(() => {
                 log(TEXT,"finally _request.params.arg1 -> " + _request.params.arg1);
                 log(TEXT,"finally state.progress -> " + state.progress);
                 log(TEXT,"finally state.log length -> " + state.log.length);
                 log(TEXT,"finally state.log current -> " + state.log[state.log.length - 1]);
 
                 if (_request.params.arg1 == 'newsong')
-                    sendState('SENDTOALL','finally -> ' + _request.params.arg1); 
-                    else
-                        if ((_request.params.arg1 != 'getplaylist') || (_request.params.arg1 != 'queuesong')) 
-                            sendState(remoteAddress,'finally -> ' + _request.params.arg1); 
-                            setTimeout(function() { 
-                                log(TEXT,"sending bb state");
-                                log(DIR,state);
-                                log(TEXT,"\n---------------------------\n\n");
-                                _response.send(state);
-                                _response.end();
-                            },250);
-                        }); // await getState('finally').then(() => { 
-        } // finally {
-    }); // App.get('/:arg1/:arg2?/:arg3?', (_request, _response) => {
+                    sendState('SENDTOALL','newsong -> ' + _request.params.arg1); 
+                        else
+                            if ((_request.params.arg1 != 'getplaylist') || (_request.params.arg1 != 'queuesong')) 
+                                sendState(remoteAddress,'finally -> ' + _request.params.arg1); 
+            }).then(() => { // await getState('finally').then(() => {
+                            log(TEXT,"_response.send(state)");
+                            log(DIR,state);
+                            log(TEXT,"\n---------------------------\n\n");
+                            _response.send(state);
+                            _response.end();
+                            }) // }).then(() => {
+
+            log(TEXT,"switch resolved()");
+            _resolve();
+            }); // new Promise(async (_resolve, _reject) => { 
+        } catch (_err) { log(TEXT, "newfunc err -> " + _err); } 
+    }); // App.get('/:arg1/:arg2?', (_request, _response) => {
 } // function setupExpress() {
 
 function setupWebsocket() {
@@ -204,15 +202,15 @@ function setVolume() {
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
 }
 
+/* xmms monday.pls file looks like this
+[playList]
+NumberOfEntries=5297
+File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
+File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
+File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
+*/
 async function getPlayList(_index) {
     log(TEXT, "getPlayList(" + _index + ")");
-    /* xmms monday.pls file looks like this
-    [playList]
-    NumberOfEntries=5297
-    File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
-    File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
-    File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
-    */
     const Readline = require('readline');
 
     try {
@@ -242,6 +240,7 @@ async function getPlayList(_index) {
                             if (_index == currentLine++) {
                                 log(TEXT,"resolved queueing -> " + line.split(/=/)[1]);
                                 execFile('xmms', ['-Q',line.split(/=/)[1]]);
+                                _resolve();
                             }
                         } // for await (line of rl) {
                     } catch (_err) { log(TEXT,"for await (const line of rl) error -> " + _err); }
@@ -249,11 +248,11 @@ async function getPlayList(_index) {
                
         log(TEXT, "resolved " + state.playList.length + " songs in playlist");
 
-        await getState('getPlayList(' + _index + ')').then(
-              () => {
-                    if (_index != undefined)
-                        sendState('SENDTOALL','queuesong');
-                    });
+        await getState('getPlayList(' + _index + ')').then(() => {
+            if (_index != undefined)
+                sendState('SENDTOALL','queuesong');
+         });
+
         _resolve();
       }); // let promise = new Promise(async (_resolve, _reject) => {
     } catch (_err) { log(TEXT, "function getPlayList() error -> " + _err); }

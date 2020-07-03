@@ -38,7 +38,7 @@ $(document).ready(function () {
     if (itsTheBB) // auto refresh
         setInterval(function() {
             sendCommand("getstate");
-        }, 10000);
+        }, 5000);
 
     sendCommand('getplaylist'); 
     setupKBEvents();
@@ -347,7 +347,7 @@ function updateUI(_logMsg) {
         $("#popupdialog").delay(5000).hide(0);
         log(TEXT,"removing state.popupDialog from state");        
         delete state.popupDialog;
-        } 
+    } 
 
     if (state.hasOwnProperty('volume'))  //  vol down -> 21 128 10  vol up -> 224 14 21
         $("#volume").slider("value", state.volume); // this will cause slidechange jquery cb to fire
@@ -362,7 +362,7 @@ function updateUI(_logMsg) {
 
         $("#mutedialog").css("display", "inline-block");
         $("#mutedialog").html("Press M to unmute");
-        } else // if (state.mute) {
+    } else // if (state.mute) {
             $("#mutedialog").css("display", "none");
 
     if (!itsTheBB)
