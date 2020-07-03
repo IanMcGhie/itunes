@@ -22,7 +22,7 @@ Number.prototype.toMMSS = function() {
     if (seconds < 10)
         seconds = "0" + seconds;
 
-    if (this > 0)
+    if (this >= 0)
         return minutes + ":" + seconds;
             else
                 return "-" + minutes + ":" + seconds;
@@ -349,7 +349,7 @@ function updateUI(_logMsg) {
         delete state.popupDialog;
     } 
 
-    if (state.hasOwnProperty('volume'))  //  vol down -> 21 128 10  vol up -> 224 14 21
+    if (state.hasOwnProperty('volume'))             //  vol down -> 21 128 10  vol up -> 224 14 21
         $("#volume").slider("value", state.volume); // this will cause slidechange jquery cb to fire
 
     if (state.mute) {
@@ -403,7 +403,6 @@ function setupWebSocket() {
 
         state = newState;
         log(DIR, state);
-        
         updateUI("websocket onmessage");
     }
 } // function setupWebSocket() {

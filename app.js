@@ -161,6 +161,7 @@ function setupExpress() {
 
 function setupWebsocket() {
     log(TEXT,"setupWebsocket()");
+    
     const Http     = require('http');
     const WSServer = require('websocket').server;
 
@@ -211,6 +212,7 @@ File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
 */
 async function getPlayList(_index) {
     log(TEXT, "getPlayList(" + _index + ")");
+    
     const Readline = require('readline');
 
     try {
