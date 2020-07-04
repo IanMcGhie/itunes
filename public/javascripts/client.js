@@ -18,9 +18,8 @@ Number.prototype.toMMSS = function() {
 
     if (minutes < 10) 
         minutes = "0" + minutes;
-
-    if (seconds < 10)
-        seconds = "0" + seconds;
+            else if (seconds < 10)
+                seconds = "0" + seconds;
 
     if (this >= 0)
         return minutes + ":" + seconds;
@@ -151,11 +150,7 @@ function setupVolumeControl() {
 
 function toHex(_n) {
     var h = parseInt(_n).toString(16);
-
-    if (h.length < 2)
-        return "0" + h;
-            else
-                return h;
+    return h.length < 2 ? "0" + h : h;;
 }
 
 function setupMouseEvents() {
@@ -627,7 +622,7 @@ function drawChart() {
                                     return lastLetter;
                                 }
                             }  // callback: function(_value, _index, _values) { 
-                        }
+                        } // ticks: {
                     }], 
                 yAxes: [{ ticks: { callback: function(_value, _index, _values) { return; } } }]
             } // scales: { 
