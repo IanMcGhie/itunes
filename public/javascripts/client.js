@@ -59,17 +59,14 @@ function setupClock() {
         $("#clock").text((state.progress - state.duration).toMMSS());
 
         if (!state.pause) {
-            var margin = -455 + (state.progress / state.duration) * 395;
+            var margin = -455 + (++state.progress / state.duration) * 395;
            
             if (itsTheBB && state.progress == state.duration)   // if we hit the end of the song bb wont receive
                 sendCommand('getstate');                        // the websocket state, so we ask for it here
 
-  //          if (state.duration - state.progress < 0)            // clamp the clock to zeo
-  //              state.progress = state.duration;
+            if (state.progress >= state.duration)            // clamp the clock
+                state.progress = state.duration;
   
-    //        if (margin < -59) // clamp the progress bar
-                state.progress++;
-                
             $("#progressbar").css("margin-left", margin);
         }
     }, 1000); 
@@ -79,7 +76,7 @@ function setupTitleTicker() {
     log(TEXT,"setupTitleTicker()");
 
     setInterval(function() {
-        if (state.hasOwnProperty('playList'))    
+        if (playList.length > 0)
             if (($("#title").text().length > 0))
                 $("#title").text($("#title").text().slice(1));
                     else
@@ -90,7 +87,7 @@ function setupTitleTicker() {
 function sendCommand(_command) {
     log(TEXT,"sendCommand(" + _command + ")");
 
-    var refresh = true;
+    var refresh = false;
 
     if (_command == "setvolume/mute") {
         state.mute = !state.mute;
@@ -127,10 +124,8 @@ function sendCommand(_command) {
         
         state.hasOwnProperty('playList') ? setupPlaylist() : null;
 
-        if (refresh)
+        if (refresh || itsTheBB)
             updateUI(false, 'sendCommand(' + _command + ')');
-
-        $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
     }); // $.getJSON(_command, function (_newState) {
 }
 
@@ -210,6 +205,16 @@ function setupMouseEvents() {
 
     $("#playlist").change(function() {
         $("#searchinput").val($("#playlist").val());
+    });
+
+    var w = $("body").width() / 2;
+    $( "#progressbar" ).draggable({
+        axis: "x",
+        containment : [1000,0,1300 ,0],
+  //      containment: [0,0,470,200],
+        stop: function( event, ui ) {
+//            alert("x -> " + ui.position.left)
+        }
     });
 } // function setupMouseEvents() {
 
@@ -297,7 +302,7 @@ function setupKBEvents() {
 } // function bodyKBEvents(_event) {
 
 function updateUI(_drawChart, _logMsg) {
-    log(TEXT,"updateUI(" + _logMsg + ")");
+    log(TEXT,"updateUI(" + _drawChart + ", " + _logMsg + ")");
 
     var currentSongTitle = playList[state.log[state.log.length - 1]];
 
@@ -323,6 +328,7 @@ function updateUI(_drawChart, _logMsg) {
     $("#songtitle").text(currentSongTitle + " (" + state.duration.toMMSS() + ")");
     $("#playlist>option:eq(" + state.log[state.log.length - 1] + ")").prop("selected", true);    
     $("#searchinput").val(currentSongTitle); 
+    $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
     $("#shuffleenabled").css("visibility",state.shuffle ? "visible" : "hidden");
     $("#ispaused").attr("src",state.pause ? "/images/paused.png" : "/images/playing.png");
 } // function updateUI(_logMsg) {
@@ -332,22 +338,24 @@ function setupWebSocket() {
 
     var client = new WebSocket("ws://" + serverUrl,"winamp");
 
-    itsTheBB   = false;
+    itsTheBB = false;
 
     client.onmessage = function(_response) {
+        log(TEXT,"websocket received state thusly");
+
         var newState = JSON.parse(_response.data).state;
 
         if (newState.log.length != state.log.length) // log length has changed new song
             $("#title").text("");                    // is playing...reset ticker
 
-        state = newState;
-
-        log(TEXT,"websocket received state thusly");
         log(DIR, state);
-        
-        state.hasOwnProperty('playList') ? setupPlaylist() : null;
-        
-        updateUI(true, 'client.onmessage');
+
+        if (newState != state) {
+            state = newState;
+            state.hasOwnProperty('playList') ? setupPlaylist() : null;
+            updateUI(true, 'client.onmessage');            
+        } else
+            log(TEXT,"websocket received state unchanged");
     }
        
     $("body").css("text-align","center");
@@ -402,8 +410,10 @@ function setupSearch() {
                 newSelect = false;
         
         $("#searchinput").keyup(function(_event) {      
-            if (_event.which == 13)
+            if (_event.which == 13) {
                 sendCommand("playsong/" + getSearchInputSongIndex());
+                $("#searchinput").blur();
+            }
 
             if (_event.which == 27)
                 $("#searchinput").blur();
@@ -421,11 +431,13 @@ function setupSearch() {
     autocomplete({  // preventSubmit: true,
         input: document.querySelector('#searchinput'),
         minLength: 2,
-
+//debounceWaitMs: 50,
         onSelect: function(_item, _inputfield) { // log(LOG,"onselect ****");
             newSelect = true;
             $("#searchinput").val(_item.label);
-            $("#searchinput").focus();
+         //   $("#searchinput").focus();
+         
+         //   sendCommand("playsong/" + getSearchInputSongIndex());
         },
         fetch: function(_match, _callback) {
             var match   = _match.toLowerCase();
@@ -472,7 +484,6 @@ function drawChart() {
     log(TEXT,"drawChart()");
 
     var barColors    = [];
-    var barThickness = [];
     var chartData    = [];
     var lastLetter   = "";
     var lastIndex    = -50;
@@ -536,8 +547,6 @@ function drawChart() {
     currentSongIndex = state.log[state.log.length - 1];
     chartData.length = playList.length;
     chartData.fill(0);
-    barThickness.length = playList.length;
-    barThickness.fill(1);
     
     for (var i = 0; i < state.log.length;i++) { 
         barColors[state.log[i]] = document.body.style.color;
@@ -550,7 +559,6 @@ function drawChart() {
     // highlight currently playing
     barColors[currentSongIndex]    = "#fd1";
     chartData[currentSongIndex]    = yMax;
-    barThickness[currentSongIndex] = 2;
 
     if (!showPlayed) // show songs not played
         for (var i = 0; i < playList.length;i++) 
@@ -572,8 +580,7 @@ function drawChart() {
             labels: chartData,
             datasets: [{
                 data:  chartData,
-                backgroundColor: barColors,
-                barThickness: barThickness,
+                backgroundColor: barColors
             }]
         },
         options: {
@@ -612,6 +619,8 @@ function drawChart() {
 } // function drawChart() {
  
 function getSearchInputSongIndex() {
+log(TEXT,"wtf-> " + $("#searchinput").val() + " and " + playList[0]);
+
     for (var i = 0; i < playList.length; i++) 
         if (playList[i].includes($("#searchinput").val())) 
             return i;

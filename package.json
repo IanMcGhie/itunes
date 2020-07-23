@@ -1,6 +1,6 @@
 {
-  "name": "pugtest2",
-  "version": "0.0.0",
+  "name": "nodeXmms",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
@@ -10,17 +10,22 @@
     "compression": "^1.7.4",
     "debug": "~2.6.9",
     "express": "^4.16.4",
+    "handlebars": "^4.7.6",
     "http-errors": "~1.6.3",
+    "npm": "^6.14.7",
     "pug": "^2.0.4",
     "sanitize-filename": "^1.6.3",
     "save": "^2.4.0",
     "websocket": "^1.0.30"
   },
   "devDependencies": {
-    "jest": "^26.0.1"
+    "grunt-typedoc": "^0.2.4",
+    "jest": "^26.0.1",
+    "typedoc": "^0.17.8",
+    "typescript": "^3.9.7"
   },
   "description": "Control your xmms player from anywhere.",
-  "main": "app.js",
+  "main": "app.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/IanMcGhie/HttpXmms.git"
