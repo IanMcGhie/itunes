@@ -1,5 +1,5 @@
 "use strict";
-// bb doesnt like the includes, let, const keyword, async functions, promises... ()=> syntax
+// bb doesnt like the let, const keyword, async functions, promises... ()=> syntax
 // ooo...neat https://en.wikipedia.org/wiki/Trie
 var DEBUG      = true;
 var itsTheBB   = true;  // default mode
@@ -14,7 +14,7 @@ var state    = {
     log: [],
     duration: 0,
     progress: 0,
-    volume: 0
+    volume: 40
 };
 
 Number.prototype.toMMSS = function() {
@@ -49,7 +49,7 @@ $(document).ready(function () {
     setupTitleTicker();
  
     window.onresize = drawChart;
-    document.body.style.color = "#0d0"; // set chart bar default color
+    document.body.style.color = "#0d0"; // set chart bar default color 
 }); // $(document).ready(function() {
 
 function setupClock() {
@@ -59,12 +59,17 @@ function setupClock() {
         $("#clock").text((state.progress - state.duration).toMMSS());
 
         if (!state.pause) {
-            var margin = -455 + (++state.progress / state.duration) * 395;
-           
+            var margin;
+
+            if (itsTheBB)
+                margin = (++state.progress / state.duration) * 460;
+                    else
+                        margin = -230 + (++state.progress / state.duration) * 405;
+            
             if (itsTheBB && state.progress == state.duration)   // if we hit the end of the song bb wont receive
                 sendCommand('getstate');                        // the websocket state, so we ask for it here
 
-            if (state.progress >= state.duration)            // clamp the clock
+            if (state.progress >= state.duration)               // clamp the clock
                 state.progress = state.duration;
   
             $("#progressbar").css("margin-left", margin);
@@ -76,38 +81,30 @@ function setupTitleTicker() {
     log(TEXT,"setupTitleTicker()");
 
     setInterval(function() {
-        if (playList.length > 0)
-            if (($("#title").text().length > 0))
-                $("#title").text($("#title").text().slice(1));
+        if (playList.length && state.log.length)
+            if (($("#pagetitle").text().length > 0))
+                $("#pagetitle").text($("#pagetitle").text().slice(1));
                     else
-                        $("#title").text(playList[state.log[state.log.length - 1]]);
+                      $("#pagetitle").text(playList[state.log[state.log.length - 1]]);
     }, 250); 
 } // function setupTitleTicker() {
 
 function sendCommand(_command) {
     log(TEXT,"sendCommand(" + _command + ")");
 
-    var refresh = false;
-
     if (_command == "setvolume/mute") {
         state.mute = !state.mute;
-        updateUI(false, 'sendCommand(' + _command + ')');
-        refresh = false;
+        updateUI('sendCommand(' + _command + ')');
         } else if (_command == "pause") {
             state.pause = !state.pause;
-            updateUI(false, 'sendCommand(' + _command + ')');
-            refresh = false;
-            } else if (_command == "shuffle") {
+            updateUI('sendCommand(' + _command + ')');
+            } else if ((_command == "shuffle") || (_command == "shuffleenabled")) {
                 state.shuffle = !state.shuffle;
-                updateUI(false, 'sendCommand(' + _command + ')');
-                refresh = false;
-                } else if (_command == "queuesong") {
-                    var index = getSearchInputSongIndex();
-
-                    log(TEXT, playList[index] + " queued");
-                    _command += '/' + index;
-                    updateUI(false, 'sendCommand(' + _command + ')');
-                    refresh = false;
+                updateUI('sendCommand(' + _command + ')');
+                } else if (_command.split('/')[0] == "queuesong") {
+                    state.popupDialog = playList[_command.split('/')[1]] + " queued";
+                    log(TEXT, playList[_command.split('/')[1]] + " queued");
+                    updateUI('sendCommand(' + _command + ')');
                 }
 
     $.getJSON(_command, function (_newState) {
@@ -115,7 +112,7 @@ function sendCommand(_command) {
         log(DIR, _newState);
 
         if (_newState.log.length != state.log.length)   // log length has changed new song
-            $("#title").text("");                       // is playing...reset ticker
+            $("#pagetitle").text("");                       // is playing...reset ticker
 
         state = _newState;
 
@@ -124,8 +121,8 @@ function sendCommand(_command) {
         
         state.hasOwnProperty('playList') ? setupPlaylist() : null;
 
-        if (refresh || itsTheBB)
-            updateUI(false, 'sendCommand(' + _command + ')');
+        if (itsTheBB)
+            updateUI('sendCommand(' + _command + ')');
     }); // $.getJSON(_command, function (_newState) {
 }
 
@@ -134,7 +131,7 @@ function setupVolumeControl() {
 
     $("#volume").slider({
         animate: false,
-        min: 0,
+        min: 1,
         max: 100,
         value: 0
     });
@@ -155,7 +152,7 @@ function setupVolumeControl() {
         }
 
         log(TEXT,"volume slidechange callback fired... new value -> " +  _ui.value + " color -> #" + r + g + b);
-
+        updateUI('volume slidechange');
         $.get("setvolume/" + _ui.value);
     }); // $("#volume").on("slidechange", function(_event, _ui) {
 } // function setupVolumeControl() {
@@ -169,7 +166,7 @@ function setupMouseEvents() {
     log(TEXT,"setupMouseEvents()");
 
     // this will cause slidechange jquery cb to fire
-    $("#winampdiv").on("wheel", function(_event) {
+    $("#winampspan").on("wheel", function(_event) {
         if (_event.originalEvent.deltaY < 0)
             $("#volume").slider("value",parseInt($("#volume").slider("value") + 1)); 
                 else
@@ -187,12 +184,8 @@ function setupMouseEvents() {
         sendCommand("playsong/" + getSearchInputSongIndex());
     });
 
-    $("#playsong").click(function() {
-        sendCommand("playsong/" + getSearchInputSongIndex());    
-    });
-
-    $("#queuesong").click(function() {
-        sendCommand("queuesong/" + getSearchInputSongIndex());    
+    $("#playsong,#queuesong").click(function() {
+        sendCommand((this).id + "/" + getSearchInputSongIndex());    
     });
 
     $("#prev,#next,#pause,#shuffle,#shuffleenabled").click(function() {
@@ -207,22 +200,44 @@ function setupMouseEvents() {
         $("#searchinput").val($("#playlist").val());
     });
 
+    $("#progressbarspan").click(function(_event, _ui) {
+        var seekTo = parseInt((((_event.originalEvent.clientX - _event.target.offsetLeft) / 420)) * 100);
+        
+        state.progress = parseInt(state.duration * (seekTo / 100));
+
+        log(TEXT,"seekTo -> " + seekTo + " state.progress -> " + state.progress);
+     //   alert("progressbarspan click seekTo -> " + seekTo);
+//        $("#progressbar").css("margin-left", 100 + "px");
+        sendCommand('seek/' + seekTo);
+    });
+
     var w = $("body").width() / 2;
     $( "#progressbar" ).draggable({
         axis: "x",
-        containment : [1000,0,1300 ,0],
-  //      containment: [0,0,470,200],
-        stop: function( event, ui ) {
-//            alert("x -> " + ui.position.left)
+        containment: "#progressbarspan",
+     
+        stop: function( _event, _ui ) {
+            alert("_ui.position.left -> " + _ui.position.left); // 0 - 195
+            
+            //var seekTo = parseInt((((_event.originalEvent.clientX - _event.target.offsetLeft) / 420)) * 100);
+            //var seekTo = parseInt( ((220 - _ui.position.left) / 420) * 100);
+            var seekTo = parseInt((_ui.position.left / 195) * 100);
+            //var seekTo = _ui.position.left;
+            
+            state.progress = parseInt(state.duration * (seekTo / 100)); 
+            log(TEXT, "_ui.position.left -> " + _ui.position.left + " seekTo 2 -> " + seekTo + " state.progress -> " + state.progress);
+            alert("seekTo 2 -> " + seekTo + " state.progress -> " + state.progress);
+            sendCommand('seek/' + seekTo);
         }
     });
+
 } // function setupMouseEvents() {
 
 function setupKBEvents() {
     log(TEXT,"setupKBEvents()");
     
-    $("body").keypress(function(_event) {
-        log(TEXT,"body keypress -> " + _event.which);
+    $("body").keyup(function(_event) {
+        log(TEXT,"body keyup -> " + _event.which);
         
         switch (_event.which) {
             case 90: // Z
@@ -273,7 +288,7 @@ function setupKBEvents() {
     }); // $("body").keyup(function(_event) {
 
     $("#playlist").focusin(function() {
-        $("body").off("keypress");
+        $("body").off("keyup");
         $("#playlist").css("border", "1px solid #0d0");
 
         $("#playlist").keyup(function(_event) {
@@ -301,8 +316,8 @@ function setupKBEvents() {
     });
 } // function bodyKBEvents(_event) {
 
-function updateUI(_drawChart, _logMsg) {
-    log(TEXT,"updateUI(" + _drawChart + ", " + _logMsg + ")");
+function updateUI(_logMsg) {
+    log(TEXT,"updateUI(" + _logMsg + ")");
 
     var currentSongTitle = playList[state.log[state.log.length - 1]];
 
@@ -318,9 +333,6 @@ function updateUI(_drawChart, _logMsg) {
         $("#setvolume\\/mute").css("display", "inline-block");
             else
                 $("#setvolume\\/mute").css("display", "none");
-
-    if (!itsTheBB && _drawChart) 
-        drawChart();
 
     // this will cause slidechange jquery cb to fire
     state.hasOwnProperty('volume') ? $("#volume").slider("value", state.volume) : null;
@@ -343,20 +355,29 @@ function setupWebSocket() {
     client.onmessage = function(_response) {
         log(TEXT,"websocket received state thusly");
 
+        var redrawChart = false;
         var newState = JSON.parse(_response.data).state;
 
-        if (newState.log.length != state.log.length) // log length has changed new song
-            $("#title").text("");                    // is playing...reset ticker
+        log(DIR, newState);
 
-        log(DIR, state);
+        if (newState.log.length != state.log.length) {
+            redrawChart = true;
+            $("#pagetitle").text("");
+        }
 
-        if (newState != state) {
+        state = newState;
+
+        if (state.hasOwnProperty('playList')) {
+            redrawChart = true;
             state = newState;
-            state.hasOwnProperty('playList') ? setupPlaylist() : null;
-            updateUI(true, 'client.onmessage');            
-        } else
-            log(TEXT,"websocket received state unchanged");
-    }
+            setupPlaylist();
+        }
+
+        updateUI("WebSocket");    
+
+        if (redrawChart)
+            drawChart("WebSocket");
+    } // client.onmessage = function(_response) {
        
     $("body").css("text-align","center");
     $("body").css("font-weight","bold");
@@ -401,7 +422,7 @@ function setupSearch() {
     $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
 
     $("#searchinput").focusin(function() {
-        $("body").off("keypress");
+        $("body").off("keyup");
         $("#searchinput").css("border", "1px solid #0d0");
           
         if (!newSelect) {
@@ -480,8 +501,11 @@ function setupSearch() {
     }) // autocomplete({
 } //  setupSearch() {
 
-function drawChart() {
-    log(TEXT,"drawChart()");
+function drawChart(_logMsg) {
+    log(TEXT,"drawChart(" + _logMsg + ")");
+
+    if (itsTheBB) 
+        return;
 
     var barColors    = [];
     var chartData    = [];
@@ -516,7 +540,7 @@ function drawChart() {
         $("#chart").contextmenu(function() { // right click
             $("#charttooltip").remove();
             showPlayed = !showPlayed;
-            drawChart();
+            drawChart("contextmenu");
         });
        
         $("#chart").click(function() {
@@ -619,8 +643,6 @@ function drawChart() {
 } // function drawChart() {
  
 function getSearchInputSongIndex() {
-log(TEXT,"wtf-> " + $("#searchinput").val() + " and " + playList[0]);
-
     for (var i = 0; i < playList.length; i++) 
         if (playList[i].includes($("#searchinput").val())) 
             return i;

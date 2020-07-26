@@ -2,36 +2,37 @@ doctype html
 html
   head
     <meta charset="utf-8">
-    link(rel='favicon', sizes='64x64', href='images/favicon.ico')
     style
         include ../public/stylesheets/jquery-ui.css
         include ../public/stylesheets/autocomplete.css
         include ../public/stylesheets/style.css
 
-    script(src='javascripts/jquery-1.12.4.js')
-    script(src='javascripts/jquery-ui.js')
-    script(src='javascripts/autocomplete/autocomplete.js')
-    script(src='javascripts/client.js') 
-    script(src='javascripts/chart.js')
+    script(src='/javascripts/jquery-1.12.4.js')
+    script(src='/javascripts/autocomplete/autocomplete.js')
+    script(src='/javascripts/jquery-ui.js')
+    script(src='/javascripts/client.js') 
+    script(src='/javascripts/chart.js')
 body
-<title id="title"></title>
+<title id="pagetitle"></title>
 <div id="setvolume/mute">Press M to unmute</div>
 <div id="popupdialog"></div>
 <div id="songtitle"></div>
-<div id="winampdiv">
+<span id="winampspan">
     <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
     <img id="ispaused" src="images/playing.png">
-    <div id="clock"></div>
-    <div id="volume" class="slider"></div>
-    <img class="dragable" id="progressbar" src="images/progressbar49x17.png">
+    <span id="clock"></span>
+    <span id="volume" class="slider"></span>
     <img id="shuffleenabled" src="images/shuffle.png">
+    <span id="progressbarspan">
+        <img class="dragable" id="progressbar" src="images/progressbar49x17.png">
+    </span>
     <map id="winampmap" name="winampmap">
         <area id="prev" shape="rect" coords="28,150,65,180">
         <area id="pause" shape="rect" coords="106,150,142,180">
         <area id="next" shape="rect" coords="186,150,218,180">
         <area id="shuffle" shape="rect" coords="281,153,357,175">
     </map>
-</div>
+</span>
 <div>
     <input id="searchinput" type="text" placeholder="Mp3 Search"  />
     <button id="playsong">Play</button>

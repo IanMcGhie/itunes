@@ -4,11 +4,6 @@
     font-family: "DS-Regular";
     src: url("/fonts/digital.ttf");   
 }
-/*
-<!--        <area id="prev" shape="rect" coords="22,150,50,180">-->
-<!--        <area id="pause" shape="rect" coords="82,150,110,180"> -->
-<!--        <area id="next" shape="rect" coords="142,150,169,180"> -->
-*/
 
 body {
     margin-left: 0px;
@@ -56,13 +51,13 @@ table {
     width: 470px;
     font-size: 24px;
 }
-
+/*
 #winampdiv {
-    margin: 0px;
+display: inline;
     padding: 0px;
 }
-
-#winamp {
+*/
+#winampspan {
     margin: 0px;
     padding: 0px;
     width: 470px;
@@ -89,7 +84,7 @@ table {
 
 #volume {
     margin-top: 108px;
-    margin-left: -282px;
+    margin-left: -280px;
     display: inline-block;
     position: absolute;
     background-color: #0f0;
@@ -98,16 +93,27 @@ table {
     z-index: 1;
 }
 
+#progressbarspan {
+    width: 420px;
+    height: 17px;
+    /*background-color:lightgreen;*/
+    margin-top: 125px;
+    margin-left: -440px;
+    padding-left: 0px;
+    position: absolute;
+    display: inline-block;
+    z-index: 1;
+    
+}
+
 #progressbar {
-    margin-top: 124px;
-    margin-left: -443px;
     position: absolute;
     z-index: 1;
 }
 
 #shuffleenabled {
     margin-top: 158px;
-    margin-left: -188px;
+    margin-left: -182px;
     position: absolute;
     z-index: 1;
 }
