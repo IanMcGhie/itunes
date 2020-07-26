@@ -18,8 +18,8 @@ var state    = {
 };
 
 Number.prototype.toMMSS = function() {
-    var minutes = parseInt(Math.abs(this) / 60);
-    var seconds = Math.abs(this % 60);
+    var minutes = parseInt(this / 60);
+    var seconds = this % 60;
 
     if (minutes < 10) 
         minutes = "0" + minutes;
@@ -27,10 +27,10 @@ Number.prototype.toMMSS = function() {
     if (seconds < 10)
         seconds = "0" + seconds;
 
-    if (this > 0)
-        return minutes + ":" + seconds;
-            else
-                return "-" + minutes + ":" + seconds;
+    if (seconds < 0)
+        seconds = 0;
+
+    return minutes + ":" + seconds;
 } // Integer.prototype.toMMSS = function() {
 
 $(document).ready(function () {
@@ -56,7 +56,7 @@ function setupClock() {
     log(TEXT,"setupClock()");
 
     setInterval(function() { 
-        $("#clock").text((state.progress - state.duration).toMMSS());
+        $("#clock").text("-" + (state.duration - state.progress).toMMSS());
 
         if (!state.pause) {
             var margin;
@@ -66,11 +66,8 @@ function setupClock() {
                     else
                         margin = -230 + (++state.progress / state.duration) * 405;
             
-            if (itsTheBB && state.progress == state.duration)   // if we hit the end of the song bb wont receive
+            if (itsTheBB && state.progress >= state.duration)   // clamp the clock the bb wont get
                 sendCommand('getstate');                        // the websocket state, so we ask for it here
-
-            if (state.progress >= state.duration)               // clamp the clock
-                state.progress = state.duration;
   
             $("#progressbar").css("margin-left", margin);
         }
@@ -85,43 +82,51 @@ function setupTitleTicker() {
             if (($("#pagetitle").text().length > 0))
                 $("#pagetitle").text($("#pagetitle").text().slice(1));
                     else
-                      $("#pagetitle").text(playList[state.log[state.log.length - 1]]);
+                        $("#pagetitle").text(playList[state.log[state.log.length - 1]]);
     }, 250); 
 } // function setupTitleTicker() {
 
 function sendCommand(_command) {
     log(TEXT,"sendCommand(" + _command + ")");
+    var refresh = true;
 
     if (_command == "setvolume/mute") {
         state.mute = !state.mute;
         updateUI('sendCommand(' + _command + ')');
+        refresh = false;
         } else if (_command == "pause") {
             state.pause = !state.pause;
             updateUI('sendCommand(' + _command + ')');
+            refresh = false;
             } else if ((_command == "shuffle") || (_command == "shuffleenabled")) {
                 state.shuffle = !state.shuffle;
                 updateUI('sendCommand(' + _command + ')');
-                } else if (_command.split('/')[0] == "queuesong") {
+                refresh = false;
+            } else if (_command.split('/')[0] == "queuesong") {
                     state.popupDialog = playList[_command.split('/')[1]] + " queued";
                     log(TEXT, playList[_command.split('/')[1]] + " queued");
                     updateUI('sendCommand(' + _command + ')');
-                }
+                    refresh = false;
+            }
 
     $.getJSON(_command, function (_newState) {
         log(TEXT, "HTTP state retrieved thusly");
         log(DIR, _newState);
 
         if (_newState.log.length != state.log.length)   // log length has changed new song
-            $("#pagetitle").text("");                       // is playing...reset ticker
+            $("#pagetitle").text("");                   // is playing...reset ticker
+
 
         state = _newState;
 
-        if (itsTheBB)
+        if (!itsTheBB) {
             state.progress++;
-        
+            drawChart("html state");
+        }    
+       
         state.hasOwnProperty('playList') ? setupPlaylist() : null;
-
-        if (itsTheBB)
+        
+        if (refresh)
             updateUI('sendCommand(' + _command + ')');
     }); // $.getJSON(_command, function (_newState) {
 }
@@ -151,7 +156,7 @@ function setupVolumeControl() {
             return;
         }
 
-        log(TEXT,"volume slidechange callback fired... new value -> " +  _ui.value + " color -> #" + r + g + b);
+        log(TEXT,"volume slidechange callback fired... sending new value -> " +  _ui.value + " color -> #" + r + g + b);
         updateUI('volume slidechange');
         $.get("setvolume/" + _ui.value);
     }); // $("#volume").on("slidechange", function(_event, _ui) {
@@ -174,10 +179,7 @@ function setupMouseEvents() {
     });
 
     $("#winamp,#clock,#progressbar").click(function() {
-        if (!itsTheBB)
-            sendCommand("getstate");
-                else
-                    sendCommand("getplaylist");
+        sendCommand("getstate");
     });
 
     $("#playlist").dblclick(function() {
@@ -230,7 +232,6 @@ function setupMouseEvents() {
             sendCommand('seek/' + seekTo);
         }
     });
-
 } // function setupMouseEvents() {
 
 function setupKBEvents() {
@@ -457,7 +458,6 @@ function setupSearch() {
             newSelect = true;
             $("#searchinput").val(_item.label);
          //   $("#searchinput").focus();
-         
          //   sendCommand("playsong/" + getSearchInputSongIndex());
         },
         fetch: function(_match, _callback) {
