@@ -1,6 +1,6 @@
 "use strict";
 /** 
- *1. you need qxmms & darkice & node &  whatever node needs & a computer for this to work
+ * 1. you need qxmms & darkice & node &  whatever node needs & a computer for this to work
  * 2. xmms preferences...general plugins...song change plugin...set command to bash -c 'curl -G winamp:3000/newsong/%f'
  * 3. the async version of this works with firefox...maybe chrome....all other browsers will not be async..for my bb to work
  */
@@ -18,7 +18,7 @@ const port     = 3000; // 80;
 
 var createError = require('http-errors');
 var express 	= require('express');
-var path 		= require('path');
+var path		= require('path');
 
 let playList = [];
 let clients  = [];
@@ -52,6 +52,8 @@ setVolume(state.volume);
 setupExpress();
 setupWebsocket();
 getPlayList();
+// turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
+execFile('xmms', ['-Son','-pf']);
 
 Fs.watchFile(playListFile, async() => { 
     try{
@@ -71,9 +73,6 @@ Fs.watchFile(playListFile, async() => {
     	log(TEXT,"Fs.watchFile error -> " + _err);
 	}
 }); // Fs.watchFile(playListFile, async() => { 
-
-// turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
-execFile('xmms', ['-Son','-pf']);
 
 function setupExpress() {
 	log(TEXT, "setupExpress()");
@@ -101,11 +100,14 @@ function setupExpress() {
         const arg1 = _request.params.arg1;
         var arg2 = parseInt(_request.params.arg2);
 
+		execFile("lynx",["-auth=admin:adminjam","--dump","http://winamp:8000/admin/stats.xsl"], (_err,_stdio,_stderr) => {
+			state.listeners = parseInt(_stdio.split('listener_connections')[1]);
+			state.currentlisteners = parseInt(_stdio.split('listeners')[1])
+		});
+
         execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
-            const stdioArgs = _stdio.split(" ");
-            
-            state.duration = parseInt(stdioArgs[0]);
-            state.progress = parseInt(stdioArgs[1]);
+            state.duration = parseInt(_stdio.split(" ")[0]);
+            state.progress = parseInt(_stdio.split(" ")[1]);
 
 	        switch (arg1) { 
 	            case "prev":
@@ -136,19 +138,21 @@ function setupExpress() {
 	            case "getplaylist":
 	                state.playList = [];
 
-	                for (let i = 0;i < playList.length; i++) 
-	                    state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
+	            	for (let i = 0;i < playList.length; i++) 
+	            		state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 
-	   				_response.send(state);			// send state to remoteAddress 
+					_response.send(state);			// send state to remoteAddress 
+					delete state.playList;
 	            break;
 
 	            case "setvolume":
-  	                if (_request.params.arg2 == 'mute')
-	          			setVolume('mute');
-	          				else
-			          			setVolume(arg2);
+					if (!remoteAddress.includes('192.168.50.1'))
+						if (_request.params.arg2 == 'mute')
+							setVolume('mute');
+								else
+									setVolume(arg2);
 
-	                sendState(remoteAddress, arg1 + '/' + _request.params.arg2); // send state to all except remoteAddress
+					sendState(remoteAddress, arg1 + '/' + _request.params.arg2); // send state to all except remoteAddress
 	            break;
 
 	            case "queuesong": 	// * really hurt *
@@ -165,7 +169,7 @@ function setupExpress() {
 		            state.pause = false;		          
 		            arg2--;
 
-		            if (arg2 > playList.length)  { // queued mp3 at end of playlist
+		            if (arg2 > playList.length - 1)  { // queued mp3 at end of playlist
 		                execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 		                    for (let i = 0; i < playList.length; i++)
 		                        if (playList[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
@@ -189,8 +193,12 @@ function setupExpress() {
 	                log(TEXT,"seekTo -> " + seekTo);
 	                log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
 	                execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
-	                	sendState(remoteAddress, arg1 + '/' + seekTo);
-	                });
+				        execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+				            state.duration = parseInt(_stdio.split(" ")[0]);
+				            state.progress = parseInt(_stdio.split(" ")[1]);
+		                	sendState("BROADCAST", arg1 + '/' + seekTo);
+		                }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+	                }); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 	            break;
 
 	            default:
@@ -198,11 +206,6 @@ function setupExpress() {
 	        } // switch (arg1) { 
 
 			_response.end();
-
-			if (state.hasOwnProperty("playList")) {
-				log(TEXT,"app.get(" + arg1 + ") removing playlist from state length -> " + state.playList.length);
-				delete state.playList;
-			}
 	    }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
     }); // App.get('/:arg1/:arg2?', (_request, _response) => {
 
@@ -278,15 +281,15 @@ function setupWebsocket() {
         httpServer: wsHttp
     }); 
 
-    wsServer.on('connect',async (_connection) => {
-        log(TEXT, _connection.socket.remoteAddress + " -> new Websocket connection");
-        clients.push(_connection);
-    });
+	wsServer.on('connect',async (_connection) => {
+		log(TEXT, _connection.socket.remoteAddress + " -> new Websocket connection");
+		clients.push(_connection);
+	});
 
-    wsServer.on('request', async (_request) => { 
-		_request.accept('winamp', _request.origin);
+	wsServer.on('request', async (_request) => { 
 		log(TEXT, _request.socket.remoteAddress + " request -> " + _request.resource);
-    });
+		_request.accept('winamp', _request.origin);
+	});
 
     wsServer.on('close', async (_connection) => {
         clients = clients.filter((el, idx, ar) => {
@@ -324,12 +327,7 @@ async function getPlayList() {
 
 function sendState(_sendTo, _logMsg) {
     log(TEXT,"sendState(" + _sendTo + ", " + _logMsg + ")");
-/*
-    if (clients.length == 0) {
-        log(TEXT,"no websocket connections...returning");
-        return;
-    }
-  */  
+
     log(DIR, state);
 
     for (let i = 0; i < clients.length; i++) 
@@ -354,8 +352,14 @@ function log(_type, _msg) {
     if (DEBUG)
         if (_type == TEXT)
             console.log(Date().split('GMT')[0] + _msg);
-                else
-                    console.dir(_msg);
+                else {
+                		var tempState = _msg;
+					//	delete tempState.log;
+	                    console.dir(tempState);
+
+	                    if (state.hasOwnProperty('log'))
+	                    	console.log(state.log.length + " songs in log")
+                }
 }
 
 module.exports = app;

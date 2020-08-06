@@ -2,10 +2,10 @@ doctype html
 html
   head
     script(src='/javascripts/jquery-1.12.4.js')
-    script(src='/javascripts/autocomplete/autocomplete.js')
     script(src='/javascripts/jquery-ui.js')
-    script(src='/javascripts/client.js') 
     script(src='/javascripts/chart.js')
+    script(src='/javascripts/autocomplete/autocomplete.js')
+    script(src='/javascripts/client.js') 
 
     style
         include ../public/stylesheets/jquery-ui.css
@@ -18,20 +18,20 @@ body
 <div id="setvolume/mute">Press M to unmute</div>
 <div id="popupdialog"></div>
 <div id="songtitle"></div>
-<span id="winampspan">
+<div id="winampspan">
     <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
     <img id="ispaused" src="images/playing.png">
     <span id="clock"></span>
     <span id="volume" class="slider"></span>
     <img id="shuffleenabled" src="images/shuffle.png">
-    <div id="progressbar2span"><img id="progressbar2handle" src="images/progressbar49x17.png"></div>
+    <div id="progressbardiv"><img id="progressbarhandle" src="images/progressbar49x17.png"></div>
     <map id="winampmap" name="winampmap">
         <area id="prev" shape="rect" coords="28,150,65,180">
         <area id="pause" shape="rect" coords="106,150,142,180">
         <area id="next" shape="rect" coords="186,150,218,180">
         <area id="shuffle" shape="rect" coords="281,153,357,175">
     </map>
-</span>
+</div>
 <div>
     <input id="searchinput" type="text" placeholder="Mp3 Search"  />
     <button id="playsong">Play</button>
@@ -41,4 +41,4 @@ body
 <div class="chartcontainer">
     <canvas id="chart" oncontextmenu="return false;"></canvas>
 </div>
-<a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a>
+<a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a><span id="connections"></span>

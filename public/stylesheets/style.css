@@ -57,13 +57,6 @@ display: inline;
     padding: 0px;
 }
 */
-#winampspan {
-    margin: 0px;
-    padding: 0px;
-    width: 470px;
-    height: 200px;
-    z-index: -1;
-}
 
 #ispaused {
     margin-left: -425px;
@@ -106,20 +99,40 @@ display: inline;
     z-index: 1;
 }
 */
-#progressbar .ui-slider-handle {
-    background: url(/images/progressbar49x17.png) no-repeat;
-    width: 49px;
+
+#progressbarhandle {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    display: block;
+    
 }
 
-#progressbar2span {
-    background-color: #f00;
-    border: none;
-    margin-top: 120px;
-    margin-left: -440px;
-    display: inline-block;
-    position: absolute;
+#winampspan {
+    margin: 0px;
+    padding: 0px;
+    
+   /* width: 470px;
+    height: 200px;*/
+    z-index: -1;
+}
+
+#progressbardiv {
     background-color: #000;
-    width: 390px;
+    
+    padding-top: 0px;
+    padding-left: 0px;
+    padding-bottom: 0px;
+
+    margin-top: 122px;
+    margin-bottom: 0px;
+    margin-left: -440px;
+  position: absolute;
+  display: inline-block;
+    width: 420px;
     height: 17px;
     z-index: 1;
 }
