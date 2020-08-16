@@ -18,13 +18,13 @@ const port     = 3000; // 80;
 
 var createError = require('http-errors');
 var express 	= require('express');
-var path		= require('path');
+var path 		= require('path');
 
+let songlog 	 = [];
 let playList = [];
 let clients  = [];
 let state    = {
     duration: 0,
-    log: [],
     mute: false,
     pause: false,
     progress: 0,
@@ -52,23 +52,23 @@ setVolume(state.volume);
 setupExpress();
 setupWebsocket();
 getPlayList();
+
 // turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
 
 Fs.watchFile(playListFile, async() => { 
     try{
 	    await getPlayList().then(async() => {
-	        var logMsg = "playListFile changed -> " + playList.length + " songs. resetting state.log";
+	        var logMsg = "playListFile changed -> " + playList.length + " songs. resetting log";
 
-	        state.log = [];
+	        songlog = [];
 			state.playList = [];
 	
 			for (let i = 0;i < playList.length; i++) 
 				state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 
-	        log(TEXT,logMsg);
-	        sendState('BROADCAST', logMsg); // broadcast new playlist
-	    });
+	        log(TEXT, logMsg);
+	    }).then(sendState('BROADCAST', logMsg));
 	} catch (_err) {
     	log(TEXT,"Fs.watchFile error -> " + _err);
 	}
@@ -105,7 +105,7 @@ function setupExpress() {
 			state.currentlisteners = parseInt(_stdio.split('listeners')[1])
 		});
 
-        execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+        execFile('qxmms', ['-lnS'], async(_err,_stdio,_stderr) => {
             state.duration = parseInt(_stdio.split(" ")[0]);
             state.progress = parseInt(_stdio.split(" ")[1]);
 
@@ -117,7 +117,7 @@ function setupExpress() {
 	            case "pause":
 	            	xmmsCmd('-t');
 	                state.pause = !state.pause;
-	                sendState(remoteAddress, arg1); // send state to all except remoteAddress
+	                await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 	            break;
 
 	            case "next":
@@ -128,11 +128,12 @@ function setupExpress() {
 	            case "shuffleenabled":
 	            	xmmsCmd('-S');
 	                state.shuffle = !state.shuffle;
-	                sendState(remoteAddress, arg1); // send state to all except remoteAddress
+	                await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 	            break;
 
 	            case "getstate":
 	            	_response.send(state); 			// send state to remoteAddress 
+	            	await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 	            break;
 
 	            case "getplaylist":
@@ -141,6 +142,7 @@ function setupExpress() {
 	            	for (let i = 0;i < playList.length; i++) 
 	            		state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 
+	            	state.songlog = songlog;
 					_response.send(state);			// send state to remoteAddress 
 					delete state.playList;
 	            break;
@@ -152,13 +154,13 @@ function setupExpress() {
 								else
 									setVolume(arg2);
 
-					sendState(remoteAddress, arg1 + '/' + _request.params.arg2); // send state to all except remoteAddress
+					await sendState(remoteAddress, arg1 + '/' + _request.params.arg2); // send state to all except remoteAddress
 	            break;
 
 	            case "queuesong": 	// * really hurt *
 	                execFile('xmms', ['-Q', playList[arg2]]);
 	                state.popupDialog = playList[arg2].split(/\/[a-z]\//i)[1].slice(0,-4) + " queued";
-	                sendState(remoteAddress, arg1 + '/' + arg2); // send state to all except remoteAddress
+	                await sendState(remoteAddress, arg1 + '/' + arg2); // send state to all except remoteAddress
 	            break;
 	        
 	            case "playsong":
@@ -173,17 +175,21 @@ function setupExpress() {
 		                execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 		                    for (let i = 0; i < playList.length; i++)
 		                        if (playList[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
-		                            state.log.push(i);
+		                            //state.log.push(i);
+		                            songlog.push(i);
 		                            log(TEXT, remoteAddress + " -> Queued song index -> " + i + " " + _stdio);
 		                            execFile('qxmms',['jump', parseInt(i) + 1]);
 		                        }
 		                }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 		            } else { // if (arg2 > playList.length)  {
 		                    log(TEXT,"newsong -> " + playList[arg2]);
-		                    state.log.push(arg2);
-		                    sendState('BROADCAST', arg1 + '/' + arg2);
+		                    //state.log.push(arg2);
+		                    songlog.push(arg2);
+							state.songlog = songlog;
+							
+		                    await sendState('BROADCAST', arg1 + '/' + arg2);
 		                    }
-
+		            
 		        	connectXmmsToDarkice();
 	            break;
 
@@ -193,10 +199,10 @@ function setupExpress() {
 	                log(TEXT,"seekTo -> " + seekTo);
 	                log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
 	                execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
-				        execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+				        execFile('qxmms', ['-lnS'], async(_err,_stdio,_stderr) => {
 				            state.duration = parseInt(_stdio.split(" ")[0]);
 				            state.progress = parseInt(_stdio.split(" ")[1]);
-		                	sendState("BROADCAST", arg1 + '/' + seekTo);
+		                	await sendState("BROADCAST", arg1 + '/' + seekTo);
 		                }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
 	                }); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 	            break;
@@ -325,7 +331,7 @@ async function getPlayList() {
     log(TEXT, "getPlayList() " + playList.length + " songs in playlist");
 } // function getPlayList() {
 
-function sendState(_sendTo, _logMsg) {
+async function sendState(_sendTo, _logMsg) {
     log(TEXT,"sendState(" + _sendTo + ", " + _logMsg + ")");
 
     log(DIR, state);
@@ -333,9 +339,14 @@ function sendState(_sendTo, _logMsg) {
     for (let i = 0; i < clients.length; i++) 
         if ((_sendTo == 'BROADCAST') || (clients[i].remoteAddress != _sendTo)) {
             log(TEXT, "sending state to " + clients[i].remoteAddress);
-            clients[i].sendUTF(JSON.stringify({ state: state }));
+            await clients[i].sendUTF(JSON.stringify({ state: state }));
         } else 
             log(TEXT, "Not sending state to " + clients[i].remoteAddress);
+
+    if (state.hasOwnProperty('songlog')) {
+        log(TEXT,"sendState() removing songlog from state");
+        delete state.songlog;
+    }
 
     if (state.hasOwnProperty('playList')) {
         log(TEXT,"sendState() removing playList from state");
@@ -352,14 +363,8 @@ function log(_type, _msg) {
     if (DEBUG)
         if (_type == TEXT)
             console.log(Date().split('GMT')[0] + _msg);
-                else {
-                		var tempState = _msg;
-					//	delete tempState.log;
-	                    console.dir(tempState);
-
-	                    if (state.hasOwnProperty('log'))
-	                    	console.log(state.log.length + " songs in log")
-                }
+                else 
+	            	console.dir(_msg);
 }
 
 module.exports = app;
