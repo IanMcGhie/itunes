@@ -193,18 +193,18 @@ function setupMouseEvents() {
         sendCommand("playsong/" + getSearchInputSongIndex());
     });
 
-    $("#playsong,#queuesong").click(function() {
+    $("#playsong, #queuesong").click(function() {
         sendCommand((this).id + "/" + getSearchInputSongIndex());
     });
 
-    $("#prev,#next,#pause,#shuffle,#shuffleenabled").click(function() {
+    $("#prev, #next, #pause, #shuffle, #shuffleenabled").click(function() {
         sendCommand((this).id);
     });
     
     $("#setvolume\\/mute").click(function() {
         sendCommand("setvolume/mute");
     });
-
+/*
     $("#progressbardiv").click(function(_event) {
         $.get("seek/" + parseInt(((_event.offsetX - 25) / 375) * 100));
 
@@ -213,23 +213,25 @@ function setupMouseEvents() {
         }, itsTheBB ? 50 : 1500);
 //        }, itsTheBB ? 50 : 1000);
     });
-
+*/
     $("#progressbarhandle").draggable({
        containment: "parent",
        start: function() {
+            log(TEXT, $("#progressbarspan start"));
             userAdjustingProgressBar = true;
         },
         stop: function(_event, _ui) {
-            log(DIR, $("#progressbarspan"));
+            log(TEXT, $("#progressbarspan stop"));
             $.get("seek/" + parseInt((_event.target.offsetLeft / 375) * 100));
+            sendCommand("getstate");
             userAdjustingProgressBar = false;
         }  
     });
-
+/*
     $("#progressbarspan").click(function() {
-        alert("as")
+        alert("#progressbarspan click");
     });
-
+*/
     $("#playlist").change(function() {
         $("#searchinput").val($("#playlist").val());
     });
@@ -321,7 +323,8 @@ function setupKBEvents() {
 function updateUI(_logMsg) {
     log(TEXT,"updateUI(" + _logMsg + ")");
 
-    if (songLog || itsTheBB) {
+    //if (songLog || itsTheBB) {
+    if (songLog.length > 0 || itsTheBB) {
         $("#songtitle").text(playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")");
         $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
         $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
@@ -391,7 +394,7 @@ function setupPlaylist() {
 
     playList = state.playList;
 
-    $("#playlist").attr("size",playList.length < 20 ? playList.length : 20);
+    $("#playlist").attr("size", playList.length < 20 ? playList.length : 20);
 
     for (var i = 0; i < playList.length; i++) {
         var select = document.getElementById("playlist");

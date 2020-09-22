@@ -133,7 +133,10 @@ function setupExpress() {
 			            break;
 
 			            case "getstate":
-			            	_response.send(state); 			// send state to remoteAddress 
+			            	log(TEXT, "sending state");
+			            	log(DIR,state);
+			            	await sendState('BROADCAST', arg1 + '/' + arg2);
+//			            	_response.send(state); 			// send state to remoteAddress 
 			        //    	await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 			            break;
 
@@ -185,14 +188,12 @@ function setupExpress() {
 				                        }
 				                }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 				            } else { // if (arg2 > playList.length)  {
-				                    log(TEXT,"newsong -> " + playList[arg2]);
-				                    //state.log.push(arg2);
 				                    songLog.push(arg2);
 									state.songLog = songLog;
 									
 				                    await sendState('BROADCAST', arg1 + '/' + arg2);
 				                    }
-				            
+
 				        	connectXmmsToDarkice();
 			            break;
 
@@ -201,22 +202,23 @@ function setupExpress() {
 
 			                log(TEXT,"seekTo -> " + seekTo);
 			                log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
-
 			              
-try {
+							try {
+				                await execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
+							        execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+							            state.duration = parseInt(_stdio.split(" ")[0]);
+							            state.progress = parseInt(_stdio.split(" ")[1]);
 
-			                await execFile('qxmms', ['seek', seekTo.toMMSS()], async () => {
-						        execFile('qxmms', ['-lnS'], async (_err,_stdio,_stderr) => {
-						            state.duration = parseInt(_stdio.split(" ")[0]);
-						            state.progress = parseInt(_stdio.split(" ")[1]);
-						        //    sendState("BROADCAST", arg1 + '/' + seekTo);
-						        })//.then(sendState("BROADCAST", arg1 + '/' + seekTo));
-				          //      }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
-			           //});
-			                }).then(sendState("BROADCAST", arg1 + '/' + seekTo)); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
-	} catch (_err) {
-		log(TEXT,"214 err -> " + _err);
-	}
+							            log(TEXT, "state.duration -> " + state.duration);
+							            log(TEXT, "state.progress -> " + state.progress);
+							        //    sendState("BROADCAST", arg1 + '/' + seekTo);
+							        })//.then(sendState("BROADCAST", arg1 + '/' + seekTo));
+			            	    }).then(sendState("BROADCAST", arg1 + '/' + arg2)); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
+					          //      }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+				           //});
+							} catch (_err) {
+								log(TEXT,"214 err -> " + _err);
+							}
 			            break;
 
 			            default:
@@ -232,7 +234,7 @@ try {
   	     });
   	      	} catch (_err) {
 		    	log(TEXT,"Fs.watchFile error -> " + _err);
-				}      
+			}      
 
     }); // App.get('/:arg1/:arg2?', (_request, _response) => {
 
