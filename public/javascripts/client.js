@@ -52,8 +52,11 @@ $(document).ready(function () {
 function setupClock() {
     log(TEXT,"setupClock()");
 
-    setInterval(function() { 
-        $("#clock").text('-' + (state.duration - state.progress).toMMSS());
+    setInterval(function() {
+        if (state.duration - state.progress > -1) 
+            $("#clock").text('-' + (state.duration - state.progress).toMMSS());
+                else
+                    $("#clock").text('-00:00');
 
         if (!state.pause) {            
             var left = ((++state.progress / state.duration) * 375);

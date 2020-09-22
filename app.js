@@ -4,11 +4,11 @@
  * 2. xmms preferences...general plugins...song change plugin...set command to bash -c 'curl -G winamp:3000/newsong/%f'
  * 3. the async version of this works with firefox...maybe chrome....all other browsers will not be async..for my bb to work
  */
-const DEBUG    = true;
+const DEBUG    	   = true;
 const { execFile } = require('child_process');
 const playListFile = "/home/ian/monday.pls";
-const Express  = require('express');
-const Fs       = require("fs");
+const Express 	   = require('express');
+const FileSystem   = require("fs");
 const Http     = require('http');
 const WSServer = require('websocket').server;
 const app      = Express();
@@ -56,7 +56,7 @@ getPlayList();
 // turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
 execFile('xmms', ['-Son','-pf']);
 
-Fs.watchFile(playListFile, async() => { 
+FileSystem.watchFile(playListFile, async() => { 
     try{
 	    await getPlayList().then(async() => {
 	        var logMsg = "playListFile changed -> " + playList.length + " songs. resetting log";
@@ -70,9 +70,9 @@ Fs.watchFile(playListFile, async() => {
 	        log(TEXT, logMsg);
 	    }).then(sendState('BROADCAST', logMsg));
 	} catch (_err) {
-    	log(TEXT,"Fs.watchFile error -> " + _err);
+    	log(TEXT,"FileSystem.watchFile error -> " + _err);
 	}
-}); // Fs.watchFile(playListFile, async() => { 
+}); // FileSystem.watchFile(playListFile, async() => { 
 
 function setupExpress() {
 	log(TEXT, "setupExpress()");
@@ -101,13 +101,15 @@ function setupExpress() {
         var arg2 = parseInt(_request.params.arg2);
   
   		try {
-			execFile("lynx",["-auth=admin:adminjam","--dump","http://winamp:8000/admin/stats.xsl"], (_err,_stdio,_stderr) => {
+			execFile("lynx",["-auth=admin:adminjam","--dump","http://winamp:8000/admin/stats.xsl"], async (_err,_stdio,_stderr) => {
 				state.listeners = parseInt(_stdio.split('listener_connections')[1]);
 				state.currentlisteners = parseInt(_stdio.split('listeners')[1])
 
-		        execFile('qxmms', ['-lnS'], async(_err,_stdio,_stderr) => {
+		        await execFile('qxmms', ['-lnS'], async(_err, _stdio, _stderr) => {
 		            state.duration = parseInt(_stdio.split(" ")[0]);
 		            state.progress = parseInt(_stdio.split(" ")[1]);
+
+		            log(TEXT, "state.duration -> " + state.duration + " state.progress -> " + state.progress);
 
 			        switch (arg1) { 
 			            case "prev":
@@ -135,7 +137,7 @@ function setupExpress() {
 			            case "getstate":
 			            	log(TEXT, "sending state");
 			            	log(DIR,state);
-			            	await sendState('BROADCAST', arg1 + '/' + arg2);
+			            	await sendState('BROADCAST', arg1);
 //			            	_response.send(state); 			// send state to remoteAddress 
 			        //    	await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 			            break;
@@ -146,12 +148,17 @@ function setupExpress() {
 			            	for (let i = 0;i < playList.length; i++) 
 			            		playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 */
-							await getPlayList();
-			            	state.songLog = songLog;
-			            	state.playList = playList;
-			            	
-			            	log(TEXT,playList.length + " songs in playlist");
-							await _response.send(state);			// send state to remoteAddress 
+try {
+							await getPlayList().then(() => {
+				            	state.songLog = songLog;
+				            	state.playList = playList;
+				            	
+				            	log(TEXT,playList.length + " songs in playlist");
+								_response.send(state);			// send state to remoteAddress 
+								});
+	} catch (_err) {
+		log(TEXT, "damnit -> " + _err);
+	}
 			            break;
 
 			            case "setvolume":
@@ -233,7 +240,7 @@ function setupExpress() {
 			    }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
   	     });
   	      	} catch (_err) {
-		    	log(TEXT,"Fs.watchFile error -> " + _err);
+		    	log(TEXT,"FileSystem.watchFile error -> " + _err);
 			}      
 
     }); // App.get('/:arg1/:arg2?', (_request, _response) => {
@@ -340,62 +347,50 @@ File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On M
 File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
 */
 async function getPlayList() {
-    const Readline = require('readline');
-    const fileStream = Fs.createReadStream(playListFile);
-    const rl = Readline.createInterface({
-        input: fileStream,
-        crlfDelay: Infinity
-    });
+	FileSystem.readFile(playListFile, function(_err, _data) {
+		var lines = _data.toString().split("\n");
 
-    let currentLine = 1;
-    playList = [];
+		playList = [];
+		
+	    lines.forEach (_line => {
+	    	if (_line.toLowerCase().includes(".flac") || _line.toLowerCase().includes(".m4a")) 
+	    		throw "!! Found flac or m4a file in playlist !!\n" + _line;
 
-try {
-
-    for await (let line of rl) 
-        if (line.includes('File')) 
-            playList.push(line.split(/\/[a-z]\//i)[1].slice(0,-4));
-
-} catch (_error) {
-	log(TEXT,"getPlayList() error -> " + _error);
-}
-
-    log(TEXT, "getPlayList() " + playList.length + " songs in playlist");
+	        if (_line.includes('File') && _line.toLowerCase().includes(".mp3"))
+	            playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
+		}); // lines.forEach (_line => {
+		
+	    log(TEXT, "getPlayList() " + playList.length + " songs in playlist");
+	});
 } // function getPlayList() {
 
 async function sendState(_sendTo, _logMsg) {
     log(TEXT,"sendState(" + _sendTo + ", " + _logMsg + ")");
-
     log(DIR, state);
 
+	try {
+	    for (let i = 0; i < clients.length; i++) 
+	        if ((_sendTo == 'BROADCAST') || (clients[i].remoteAddress != _sendTo)) {
+	            log(TEXT, "sending state to " + clients[i].remoteAddress);
+	            await clients[i].sendUTF(JSON.stringify({ state: state }));
+	        } else 
+	            log(TEXT, "Not sending state to " + clients[i].remoteAddress);
 
-try {
+	    if (state.hasOwnProperty('songLog')) {
+	        log(TEXT,"sendState() removing songLog from state");
+	        delete state.songLog;
+	    }
 
-    for (let i = 0; i < clients.length; i++) 
-        if ((_sendTo == 'BROADCAST') || (clients[i].remoteAddress != _sendTo)) {
-            log(TEXT, "sending state to " + clients[i].remoteAddress);
-            await clients[i].sendUTF(JSON.stringify({ state: state }));
-        } else 
-            log(TEXT, "Not sending state to " + clients[i].remoteAddress);
+	    if (state.hasOwnProperty('playList')) {
+	        log(TEXT,"sendState() removing playList from state");
+	        delete state.playList;
+	    }
 
-    if (state.hasOwnProperty('songLog')) {
-        log(TEXT,"sendState() removing songLog from state");
-        delete state.songLog;
-    }
-
-    if (state.hasOwnProperty('playList')) {
-        log(TEXT,"sendState() removing playList from state");
-        delete state.playList;
-    }
-
-    if (state.hasOwnProperty('popupDialog')) {
-        log(TEXT,"sendState() removing popupDialog from state");
-        delete state.popupDialog;
-    }
-
-} catch (_error) {
-	log(TEXT,"sendState error -> " + _error);
-}
+	    if (state.hasOwnProperty('popupDialog')) {
+	        log(TEXT,"sendState() removing popupDialog from state");
+	        delete state.popupDialog;
+	    }
+	} catch (_error) { log(TEXT,"sendState error -> " + _error); }
 } // function sendState(_sendTo, _logMsg) {
 
 function log(_type, _msg) {
