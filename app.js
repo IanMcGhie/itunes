@@ -57,21 +57,19 @@ getPlayList();
 execFile('xmms', ['-Son','-pf']);
 
 FileSystem.watchFile(playListFile, async() => { 
-    try{
-	    await getPlayList().then(async() => {
-	        var logMsg = "playListFile changed -> " + playList.length + " songs. resetting log";
+	try {
+		await getPlayList().then(async() => {
+			var logMsg = "playListFile changed -> " + playList.length + " songs. resetting log";
 
-	        songLog = [];
+			songLog = [];
 			state.playList = [];
-	
-			for (let i = 0;i < playList.length; i++) 
-				state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 
-	        log(TEXT, logMsg);
-	    }).then(sendState('BROADCAST', logMsg));
-	} catch (_err) {
-    	log(TEXT,"FileSystem.watchFile error -> " + _err);
-	}
+			for (let i = 0;i < playList.length; i++) 
+			state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
+
+			log(TEXT, logMsg);
+		}).then(sendState('BROADCAST', logMsg));
+	} catch (_err) { log(TEXT,"FileSystem.watchFile error -> " + _err); }
 }); // FileSystem.watchFile(playListFile, async() => { 
 
 function setupExpress() {
@@ -144,21 +142,16 @@ function setupExpress() {
 
 			            case "getplaylist":
 			                state.playList = [];
-/*
-			            	for (let i = 0;i < playList.length; i++) 
-			            		playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
-*/
-try {
-							await getPlayList().then(() => {
-				            	state.songLog = songLog;
-				            	state.playList = playList;
-				            	
-				            	log(TEXT,playList.length + " songs in playlist");
-								_response.send(state);			// send state to remoteAddress 
-								});
-	} catch (_err) {
-		log(TEXT, "damnit -> " + _err);
-	}
+
+							try {
+								await getPlayList().then(() => {
+					            	state.songLog = songLog;
+					            	state.playList = playList;
+					            	
+					            	log(TEXT,playList.length + " songs in playlist");
+									_response.send(state);			// send state to remoteAddress 
+									});
+							} catch (_err) { log(TEXT, "damnit -> " + _err); }
 			            break;
 
 			            case "setvolume":
@@ -238,11 +231,8 @@ try {
 				log(TEXT, remoteAddress + " -> _response.end()");
 				_response.end();
 			    }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
-  	     });
-  	      	} catch (_err) {
-		    	log(TEXT,"FileSystem.watchFile error -> " + _err);
-			}      
-
+  	     	});
+      	} catch (_err) { log(TEXT,"FileSystem.watchFile error -> " + _err); }
     }); // App.get('/:arg1/:arg2?', (_request, _response) => {
 
 	// catch 404 and forward to error handler
