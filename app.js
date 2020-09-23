@@ -29,7 +29,7 @@ let state    = {
     pause: false,
     progress: 0,
     shuffle: true,
-    volume: 40
+    volume: 75
 };
 
 Number.prototype.toMMSS = function() {
@@ -65,7 +65,7 @@ FileSystem.watchFile(playListFile, async() => {
 			state.playList = [];
 
 			for (let i = 0;i < playList.length; i++) 
-			state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
+				state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
 
 			log(TEXT, logMsg);
 		}).then(sendState('BROADCAST', logMsg));
@@ -107,8 +107,6 @@ function setupExpress() {
 		            state.duration = parseInt(_stdio.split(" ")[0]);
 		            state.progress = parseInt(_stdio.split(" ")[1]);
 
-		            log(TEXT, "state.duration -> " + state.duration + " state.progress -> " + state.progress);
-
 			        switch (arg1) { 
 			            case "prev":
 			                xmmsCmd('-r');
@@ -135,7 +133,7 @@ function setupExpress() {
 			            case "getstate":
 			            	log(TEXT, "sending state");
 			            	log(DIR,state);
-			            	await sendState('BROADCAST', arg1);
+			            	await sendState('BROADCAST', arg1 + "/" + arg2);
 //			            	_response.send(state); 			// send state to remoteAddress 
 			        //    	await sendState(remoteAddress, arg1); // send state to all except remoteAddress
 			            break;
@@ -156,12 +154,12 @@ function setupExpress() {
 
 			            case "setvolume":
 							if (!remoteAddress.includes('192.168.50.1'))
-								if (_request.params.arg2 == 'mute')
+								if (arg2 == 'mute')
 									setVolume('mute');
 										else
 											setVolume(arg2);
 
-							await sendState(remoteAddress, arg1 + '/' + _request.params.arg2); // send state to all except remoteAddress
+							await sendState(remoteAddress, arg1 + '/' + arg2); // send state to all except remoteAddress
 			            break;
 
 			            case "queuesong": 	// * really hurt *
@@ -188,9 +186,13 @@ function setupExpress() {
 				                        }
 				                }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 				            } else { // if (arg2 > playList.length)  {
+						            log(TEXT, "newsong title    -> " + playList[arg2]);
+						            log(TEXT, "newsong duration -> " + state.duration);
+						            log(TEXT, "newsong progress -> " + state.progress);
+
 				                    songLog.push(arg2);
 									state.songLog = songLog;
-									
+
 				                    await sendState('BROADCAST', arg1 + '/' + arg2);
 				                    }
 
@@ -203,22 +205,16 @@ function setupExpress() {
 			                log(TEXT,"seekTo -> " + seekTo);
 			                log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
 			              
-							try {
-				                await execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
-							        execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
-							            state.duration = parseInt(_stdio.split(" ")[0]);
-							            state.progress = parseInt(_stdio.split(" ")[1]);
-
-							            log(TEXT, "state.duration -> " + state.duration);
-							            log(TEXT, "state.progress -> " + state.progress);
-							        //    sendState("BROADCAST", arg1 + '/' + seekTo);
-							        })//.then(sendState("BROADCAST", arg1 + '/' + seekTo));
-			            	    }).then(sendState("BROADCAST", arg1 + '/' + arg2)); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
+//							try {
+				                execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
+							 		state.progress = arg2;
+							 		sendState("BROADCAST", arg1 + '/' + arg2)
+			            	    });//.then(sendState("BROADCAST", arg1 + '/' + arg2)); // execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 					          //      }); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
 				           //});
-							} catch (_err) {
-								log(TEXT,"214 err -> " + _err);
-							}
+//							} catch (_err) {
+//								log(TEXT,"214 err -> " + _err);
+//							}
 			            break;
 
 			            default:
@@ -289,9 +285,9 @@ function setVolume(_params) {
                     		else
                         		state.volume = parseInt(_params);
                      
-    log(TEXT,"setVolume(" + _params + ") state.volume -> " + state.volume);
+    log(TEXT,"setVolume(" + _params + ") state.volume -> " + state.volume + "%");
 
-    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume]);
+    execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + "%"]);
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.mute ? "mute" : "unmute"]);
 }
 
@@ -344,7 +340,7 @@ async function getPlayList() {
 		
 	    lines.forEach (_line => {
 	    	if (_line.toLowerCase().includes(".flac") || _line.toLowerCase().includes(".m4a")) 
-	    		throw "!! Found flac or m4a file in playlist !!\n" + _line;
+	    		throw "!! Found non mp3 file in playlist !!\n" + _line;
 
 	        if (_line.includes('File') && _line.toLowerCase().includes(".mp3"))
 	            playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));

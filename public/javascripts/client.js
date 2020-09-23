@@ -153,9 +153,13 @@ function setupVolumeControl() {
     $("#volume").on("slidechange", function(_event, _ui) {
         //  vol 0% -> 40 153 28  vol 100% -> 225 31 38
         //              28 99 1c             e1 1f 26 
+//        var r = toHex(_ui.value * 2 + 50);
+  //      var g = toHex(153 - _ui.value);
+    //    var b = toHex(_ui.value * 0.1 + 28);
         var r = toHex(_ui.value * 1.85 + 40);
-        var g = toHex(_ui.value * 2 + 128);
+        var g = toHex(153 - _ui.value);
         var b = toHex(_ui.value * 0.1 + 28);
+
 
         $("#volume").css("background-color","#" + r + g + b);
 
