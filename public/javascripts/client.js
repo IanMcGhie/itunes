@@ -38,7 +38,9 @@ $(document).ready(function () {
     if (itsFirefox || itsChrome)
         setupWebSocket(); // this sets itsTheBB to false
 
-    sendCommand("getplaylist");
+    if (itsTheBB)
+        sendCommand("getbbplaylist");
+    
     setupKBEvents();
     setupMouseEvents();
     setupVolumeControl();
@@ -62,7 +64,7 @@ function setupClock() {
             var left = ((++state.progress / state.duration) * 375);
              
             if (itsTheBB && state.progress >= state.duration)   // clamp the clock the bb wont get
-                sendCommand("getstate");                        // the websocket state, so we ask for it here
+                sendCommand("getbbplaylist");                        // the websocket state, so we ask for it here
 
             if (state.progress > state.duration)
                 left = 375;
@@ -107,8 +109,8 @@ function sendCommand(_command) {
         updateUI('sendCommand(' + _command + ')');
 
     $.getJSON(_command, function (_newState) {
-        if (!itsTheBB && (_command == "prev" || _command == "next"))// || _command == "getstate"))
-            return;
+//        if (!itsTheBB && (_command == "prev" || _command == "next"))// || _command == "getstate"))
+  //          return;
 
         log(TEXT, "HTTP state retrieved thusly");
 
@@ -129,7 +131,7 @@ function sendCommand(_command) {
 
         if (postRefresh)
             updateUI('sendCommand(' + _command + ')');
-        
+        /*
         if (itsTheBB && (_command == "prev" || _command == "next" || _command == "getstate"))
             setTimeout(function() {
                 $.getJSON("getstate", function (_bbState) {
@@ -137,6 +139,7 @@ function sendCommand(_command) {
                     updateUI('itsTheBB -> ' + itsTheBB);
                 });
             }, 750);
+            */
   }); // $.getJSON(_command, function (_newState) {
 }
 
@@ -153,13 +156,9 @@ function setupVolumeControl() {
     $("#volume").on("slidechange", function(_event, _ui) {
         //  vol 0% -> 40 153 28  vol 100% -> 225 31 38
         //              28 99 1c             e1 1f 26 
-//        var r = toHex(_ui.value * 2 + 50);
-  //      var g = toHex(153 - _ui.value);
-    //    var b = toHex(_ui.value * 0.1 + 28);
         var r = toHex(_ui.value * 1.85 + 40);
         var g = toHex(153 - _ui.value);
         var b = toHex(_ui.value * 0.1 + 28);
-
 
         $("#volume").css("background-color","#" + r + g + b);
 
@@ -192,7 +191,7 @@ function setupMouseEvents() {
     });
 
     $("#winampspan").click(function() {
-      //  if (itsTheBB)
+        if (itsTheBB)
             sendCommand("getstate");
     });
 
@@ -333,7 +332,7 @@ function updateUI(_logMsg) {
     //if (songLog || itsTheBB) {
     if (songLog.length > 0 || itsTheBB) {
         $("#songtitle").text(playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")");
-        $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
+        //$("#searchinput").val(playList[songLog[songLog.length - 1]]); 
         $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
         $("#playlist>option:eq(" + songLog[songLog.length - 1] + ")").prop("selected", true);    
     }
@@ -375,6 +374,7 @@ function setupWebSocket() {
         if (state.hasOwnProperty('songLog')) {
             log(TEXT,"log file in state. length -> " + state.songLog.length);
             songLog = state.songLog;
+            $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
             drawChart("client.onmessage");
         }
 
@@ -386,10 +386,10 @@ function setupWebSocket() {
     $("body").css("font-weight","bold");
     $("body").css("font-size","24px");
     $("#clock").css("margin-left","-410px");
+    $("#setvolume\\/mute").css("left", (screen.width / 2) - (("Press M to unmute".length / 2) * 14) + "px");    
     $("#ispaused").css("margin-left","-420px");
     $("#shuffleenabled").css("margin-left","-182px");
     $("#songtitle").css("width","100%");
-    $("#setvolume\\/mute").css("left", (screen.width / 2) - (("Press M to unmute".length / 2) * 14) + "px");    
 } // function setupWebSocket() {
 
 function charsAllowed(_value) {
