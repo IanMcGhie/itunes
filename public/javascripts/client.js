@@ -132,9 +132,9 @@ function sendCommand(_command) {
         if (postRefresh && !itsTheBB)
             updateUI('sendCommand(' + _command + ')');
         
-        if (itsTheBB && _command != "getbbplaylist") // if (itsTheBB && (_command == "prev" || _command == "next" || _command == "getstate"))
+        if (itsTheBB && _command == "getbbplaylist") // if (itsTheBB && (_command == "prev" || _command == "next" || _command == "getstate"))
             setTimeout(function() {
-                $.getJSON("getstate", function (_bbState) {
+                $.getJSON(_command, function (_bbState) {
                     state = _bbState;
                     updateUI('itsTheBB -> ' + itsTheBB);
                 });
@@ -198,10 +198,8 @@ function setupMouseEvents() {
         sendCommand("playsong/" + getSearchInputSongIndex());
     });
 
-    $("playsong").click(function() {
-        var index = getSearchInputSongIndex();
-        state.queueSong = index;
-        sendCommand("queuesong/" + index);
+    $("#playsong").click(function() {
+        sendCommand("playsong/" + getSearchInputSongIndex());
     });
 
     $("#queuesong").click(function() {
@@ -209,9 +207,7 @@ function setupMouseEvents() {
     });
 
     $("#pause").click(function() {
-        state.pause = !state.pause;
         updateUI('mouse click pause');
-       // sendCommand((this).id);
     });
 
     $("#shuffle, #shuffleenabled").click(function() {
@@ -227,26 +223,17 @@ function setupMouseEvents() {
     $("#setvolume\\/mute").click(function() {
         sendCommand("setvolume/mute");
     });
-/*
-    $("#progressbardiv").click(function(_event) {
-        $.get("seek/" + parseInt(((_event.offsetX - 25) / 375) * 100));
 
-        setTimeout(function() {
-            sendCommand("getstate");
-        }, itsTheBB ? 50 : 1500);
-//        }, itsTheBB ? 50 : 1000);
-    });
-*/
     $("#progressbarhandle").draggable({
        containment: "parent",
        start: function() {
-            log(TEXT, $("#progressbarspan start"));
+            log(TEXT, "#progressbarspan start");
             userAdjustingProgressBar = true;
         },
         stop: function(_event, _ui) {
-            log(TEXT, $("#progressbarspan stop"));
+            log(TEXT, "#progressbarspan stop");
             $.get("seek/" + parseInt((_event.target.offsetLeft / 375) * 100));
-            $("#progressbarhandle").css("left", parseInt(_event.target.offsetLeft / 375));
+            $("#progressbarhandle").css("left", parseInt(_event.target.offsetLeft));
             userAdjustingProgressBar = false;
         }  
     });
@@ -337,21 +324,17 @@ function setupKBEvents() {
 } // function bodyKBEvents(_event) {
 
 function queueSong(_index) {
-//                 index = getSearchInputSongIndex();
-               // state.popupDialog = playList[_index] + " queued";   
-               state.queueSong = _index;
-                updateUI('queuesong -> ' + _index);
-                sendCommand("queuesong/" + _index);
+    state.queueSong = _index;
+    updateUI('queuesong -> ' + _index);
+    sendCommand("queuesong/" + _index);
 }
 
 function updateUI(_logMsg) {
     log(TEXT,"updateUI(" + _logMsg + ")");
 
-//    if (songLog.length > 0 || itsTheBB) {
     if (songLog.length > 0) {
         $("#songtitle").text(playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")");
-    //     $("#songtitle").text(state.ID3.title + " (" + state.duration.toMMSS() + ")");
-        //$("#searchinput").val(playList[songLog[songLog.length - 1]]); 
+        $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
         $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
         $("#playlist>option:eq(" + songLog[songLog.length - 1] + ")").prop("selected", true);    
     }

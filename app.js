@@ -24,7 +24,7 @@ let path 			= require('path');
 let songLog 		= [];
 let playList 		= [];
 let clients 		= [];
-let state 			= {
+let state			= {
     duration: 0,
     mute: false,
     pause: false,
@@ -103,8 +103,8 @@ function setupExpress() {
 
 	app.get('/:arg1/:arg2?', (_request, _response) => {
 		const remoteAddress = _request.socket.remoteAddress; 
-		const arg1 			= _request.params.arg1;
-		const arg2 			= _request.params.arg2;
+		const arg1			= _request.params.arg1;
+		const arg2			= _request.params.arg2;
 
 		log(TEXT,"arg1 -> " + arg1 + " arg2 -> " + arg2);
 
@@ -113,7 +113,7 @@ function setupExpress() {
 				state.duration = parseInt(_stdio.split(" ")[0]);
 				state.progress = parseInt(_stdio.split(" ")[1]);
 
-				switch (arg1) { 
+				switch (arg1) {
 					case "prev":
 						xmmsCmd('-r');
 					break;
@@ -132,14 +132,6 @@ function setupExpress() {
 						xmmsCmd('-S');
 						state.shuffle = !state.shuffle;
 						sendState(remoteAddress, arg1); // send state to all except remoteAddress
-					break;
-
-					case "getstate":
-						log(TEXT, "sending state");
-						state.songLog = songLog;
-						log(DIR, state);
-						_response.send(state); 			// send state to remoteAddress 
-						delete state.songLog;
 					break;
 
 					case "getbbplaylist":
@@ -167,9 +159,7 @@ function setupExpress() {
 						log(TEXT, "queueing song -> " + playList[arg2].split("/")[1]);
 						execFile('xmms', ['-Q', playList[arg2].split("//")[1]]);
 						state.queueSong = parseInt(arg2);
-					//	state.popupDialog = playList[arg2].split("//")[1] + " queued";
 						sendState(remoteAddress, arg1 + '/' + arg2); // send state to all except remoteAddress
-						//delete state.popupDialog;
 					break;
 
 					case "playsong":
@@ -177,30 +167,9 @@ function setupExpress() {
 					break;
 
 					case "newsong":
-					//	state.pause = false;		          
-/*
-						if (arg2 > playList.length - 2)  { // queued mp3 at end of playlist
-//							execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-state.queueSong = parseInt(arg2);
-//log(TEXT, "_stdio -> " + _stdio);
-
-								for (let i = 0; i < playList.length; i++)
-									if (playList[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
-										log(TEXT, remoteAddress + " -> Queued song index -> " + i + " path" + playList[i]);
-										songLog.push(i);
-										execFile('qxmms',['jump', parseInt(i) + 1]);
-									} // if (playList[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
-//							}); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-						} else { */// if (arg2 > playList.length - 2)  { // queued mp3 at end of playlist
-//								log(TEXT, "newsong -> " + playList[arg2 - 1]);
-								songLog.push(arg2 - 1);
-								state.songLog = songLog;
-//								await readID3Tag(arg2 - 1).then(() => {
-									sendState('BROADCAST', arg1 + '/' + (arg2 - 1));
-//								});
-						//		delete state.songLog;
-						//		}
-
+						songLog.push(arg2 - 1);
+						state.songLog = songLog;
+						sendState('BROADCAST', arg1 + '/' + (arg2 - 1));
 						connectXmmsToDarkice();
 					break;
 
@@ -211,8 +180,8 @@ state.queueSong = parseInt(arg2);
 						log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
 
 						execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
-							state.progress = parseInt(arg2);
-							sendState("BROADCAST", arg1 + '/' + arg2)
+							state.progress = seekTo;
+							sendState(remoteAddress, arg1 + '/' + arg2)
 						});
 					break;
 
@@ -301,36 +270,20 @@ function setupWebsocket() {
 	wsServer.on('connect', (_connection) => {
 		log(TEXT, _connection.socket.remoteAddress + " -> new Websocket connection. Sending state");
 		clients.push(_connection);
-	//	try {
-//			await getPlayList().then(() => {
-			 getPlayList();//then(() => {
-        		execFile('qxmms', ['-lnS'], async(_err, _stdio, _stderr) => {
 
+		getPlayList();
+		execFile('qxmms', ['-lnS'], async(_err, _stdio, _stderr) => {
+            state.duration = parseInt(_stdio.split(" ")[0]);
+            state.progress = parseInt(_stdio.split(" ")[1]);
+			state.playList = playList;
+			state.songLog  = songLog; 
 
-	            state.duration = parseInt(_stdio.split(" ")[0]);
-	            state.progress = parseInt(_stdio.split(" ")[1]);
-				state.playList = playList;
-				state.songLog  = songLog; 
-
-//await putPlaylistInState().then(() => {
-				//state.playList.push(playList[i].split(/\/[a-z]\//i)[1].slice(0,-4));
-				
-//				await readID3Tag(songLog[songLog.length - 1].then(() => {
-
-					log(DIR, state);
-					_connection.sendUTF(JSON.stringify({ state: state }));
-					delete state.playList;
-					delete state.songLog;
-					log(TEXT, "removing playList and songLog from state");
-					});
-				//});
-			
-		//	} catch (_err) {
- 		///		log(TEXT, "readID3Tag error -> " + _err);			
-			//}
-
-
-		
+			log(DIR, state);
+			_connection.sendUTF(JSON.stringify({ state: state }));
+			delete state.playList;
+			delete state.songLog;
+			log(TEXT, "removing playList and songLog from state");
+			});
 	});
 
 	wsServer.on('request', (_request) => { 
@@ -379,19 +332,6 @@ async function getPlayList() {
 	log(TEXT,"getPlayList error -> " + _error);
 }
 } // function getPlayList() {
-/*
-async function putPlaylistInState() {
-	log(TEXT,"putPlaylistInState()");
-	
-	state.playList = [];
-	
-	for (let i = 0; i < playList.length; i++) {
-		await readID3Tag(i).then(() => {
-			state.playList.push(state.ID3.title);
-		});
-	}
-}
-*/
 
 async function sendState(_sendTo, _logMsg) {
     log(TEXT,"sendState(" + _sendTo + ", " + _logMsg + ")");
@@ -405,8 +345,6 @@ async function sendState(_sendTo, _logMsg) {
 	        } else 
 	            log(TEXT, "Not sending state to " + clients[i].remoteAddress);
 
-//	        if (state.hasOwnProperty("popupDialog")) 
-//	        	delete state.popupDialog;
 	        if (state.hasOwnProperty("queueSong")) 
 	        	delete state.queueSong;
 
