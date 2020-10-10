@@ -17,6 +17,7 @@
     "pug": "^2.0.4",
     "sanitize-filename": "^1.6.3",
     "save": "^2.4.0",
+    "serve-favicon": "^2.5.0",
     "websocket": "^1.0.31"
   },
   "devDependencies": {

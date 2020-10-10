@@ -108,9 +108,6 @@ function sendCommand(_command) {
     if (!postRefresh)
         updateUI('sendCommand(' + _command + ')');
 
-    log(TEXT, "current state");
-    log(DIR, state);
-        
     $.getJSON(_command, function (_newState) {
         log(TEXT, "HTTP state retrieved thusly");
 
@@ -129,16 +126,17 @@ function sendCommand(_command) {
             drawChart('$.getJSON(' + _command + ')');
         }
 
-        if (postRefresh && !itsTheBB)
-            updateUI('sendCommand(' + _command + ')');
-        
-        if (itsTheBB && _command == "getbbplaylist") // if (itsTheBB && (_command == "prev" || _command == "next" || _command == "getstate"))
-            setTimeout(function() {
+//        if (postRefresh && !itsTheBB)
+        if (postRefresh || _command == "getstate")
+        //    updateUI('sendCommand(' + _command + ')');
+       
+        //if (itsTheBB)
+     //       setTimeout(function() {
                 $.getJSON(_command, function (_bbState) {
                     state = _bbState;
                     updateUI('itsTheBB -> ' + itsTheBB);
                 });
-            }, 750);    
+       //     }, 100);
   }); // $.getJSON(_command, function (_newState) {
 }
 
@@ -206,20 +204,10 @@ function setupMouseEvents() {
         queueSong(getSearchInputSongIndex());
     });
 
-    $("#pause").click(function() {
-        updateUI('mouse click pause');
-    });
-
-    $("#shuffle, #shuffleenabled").click(function() {
-        state.shuffle = !state.shuffle;
-        sendCommand((this).id);
-        updateUI('mouse click shuffle');
-    });
-
-    $("#prev, #next, #pause").click(function() {
+    $("#shuffle, #shuffleenabled,#pause,#prev, #next, #pause").click(function() {
         sendCommand((this).id);
     });
-    
+
     $("#setvolume\\/mute").click(function() {
         sendCommand("setvolume/mute");
     });
@@ -236,10 +224,6 @@ function setupMouseEvents() {
             $("#progressbarhandle").css("left", parseInt(_event.target.offsetLeft));
             userAdjustingProgressBar = false;
         }  
-    });
-
-    $("#searchinput").change(function() {
-        log(TEXT, "we need to trigger the autocomplete from a paste in to searchinput here...maybe");
     });
 
     $("#playlist").change(function() {
@@ -341,7 +325,7 @@ function updateUI(_logMsg) {
 
     if (state.hasOwnProperty('queueSong')) {
         $("#popupdialog").css("display", "block");
-        state.popupDialog = playList[getSearchInputSongIndex()] + " queued";
+        state.popupDialog = playList[state.queueSong] + " queued";
         $("#popupdialog").text(state.popupDialog);
         $("#popupdialog").delay(5000).hide(0);  
 
@@ -379,8 +363,10 @@ function setupWebSocket() {
             drawChart("client.onmessage");
         }
 
-    state.progress++;  // why not
-    updateUI("client.onmessage");    
+        if (!userAdjustingProgressBar)
+            $("#progressbarhandle").css("left", (++state.progress / state.duration) * 375);
+
+        updateUI("client.onmessage");    
     } // client.onmessage = function(_response) {
        
     $("body").css("text-align","center");
@@ -407,9 +393,9 @@ function setupPlaylist() {
         var option = document.createElement("option");
 
         if (document.getElementById("option"))
-            select.removeChild("id" + i); 
+            select.removeChild("id" + "song_" + i); 
                 
-        option.setAttribute("id", i);
+        option.setAttribute("id", "song_" + i);
         option.text = playList[i];
         select.add(option);
     } 
