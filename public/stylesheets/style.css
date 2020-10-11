@@ -6,10 +6,10 @@
 }
 
 body {
-    margin-left: 0px;
     font-family: "Hack";
-    font-size: 20px;
-    text-align: left;
+    text-align: center;
+    font-weight: bold;
+    font-size: 24px;
     background: url(/images/space.png);
 }
 
@@ -48,18 +48,12 @@ table {
     margin-top: 25px;
     margin-bottom: 25px;
     font-family: inherit;
-    width: 470px;
+    width: 100%;
     font-size: 24px;
 }
-/*
-#winampdiv {
-display: inline;
-    padding: 0px;
-}
-*/
 
 #ispaused {
-    margin-left: -425px;
+    margin-left: -420px;
     margin-top: 50px;
     position: absolute;
     z-index: 1;
@@ -85,20 +79,6 @@ display: inline;
     height: 3px;
     z-index: 1;
 }
-/*
-#progressbar {
-    background-color: transparent;
-    border: none;
-    margin-top: 132px;
-    margin-left: -440px;
-    display: inline-block;
-    position: absolute;
-    background-color: #000;
-    width: 390px;
-    height: 3px;
-    z-index: 1;
-}
-*/
 
 #progressbarhandle {
     padding-top: 0px;
@@ -114,24 +94,19 @@ display: inline;
 #winampspan {
     margin: 0px;
     padding: 0px;
-    
-   /* width: 470px;
-    height: 200px;*/
     z-index: -1;
 }
 
 #progressbardiv {
     background-color: #000;
-    
     padding-top: 0px;
     padding-left: 0px;
     padding-bottom: 0px;
-
     margin-top: 122px;
     margin-bottom: 0px;
     margin-left: -445px;
-  position: absolute;
-  display: inline-block;
+    position: absolute;
+    display: inline-block;
     width: 420px;
     height: 17px;
     z-index: 1;
@@ -139,7 +114,7 @@ display: inline;
 
 #shuffleenabled {
     margin-top: 158px;
-    margin-left: -188px;
+    margin-left: -182px;
     position: absolute;
     z-index: 1;
 }
@@ -201,15 +176,15 @@ display: inline;
 }
 
 #setvolume\/mute,#popupdialog { 
-    margin: auto;
     padding: 20px;
-    top: 35%;
-    left: 11%;
     position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%);
     color: #fd1;
     border: 1px solid #fd1;
     border-radius: 20px;
     background: #000;
-    display: none;
     z-index: 3;
+    display: none;
 }

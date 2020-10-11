@@ -2,7 +2,7 @@
 // bb doesnt like the let, includes, const keyword, async functions, promises... ()=> syntax
 // ooo...neat https://en.wikipedia.org/wiki/Trie
 var DEBUG      = true;
-var itsTheBB   = true;  // default mode
+var itsTheBB   = true;
 var showPlayed = true;
 var TEXT       = true;
 var DIR        = false;
@@ -126,17 +126,11 @@ function sendCommand(_command) {
             drawChart('$.getJSON(' + _command + ')');
         }
 
-//        if (postRefresh && !itsTheBB)
         if (postRefresh || _command == "getstate")
-        //    updateUI('sendCommand(' + _command + ')');
-       
-        //if (itsTheBB)
-     //       setTimeout(function() {
-                $.getJSON(_command, function (_bbState) {
-                    state = _bbState;
-                    updateUI('itsTheBB -> ' + itsTheBB);
-                });
-       //     }, 100);
+            $.getJSON(_command, function (_bbState) {
+                state = _bbState;
+                updateUI('itsTheBB -> ' + itsTheBB);
+            });
   }); // $.getJSON(_command, function (_newState) {
 }
 
@@ -316,6 +310,9 @@ function queueSong(_index) {
 function updateUI(_logMsg) {
     log(TEXT,"updateUI(" + _logMsg + ")");
 
+    if (itsTheBB)
+        $("body").css("text-align","left");
+
     if (songLog.length > 0) {
         $("#songtitle").text(playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")");
         $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
@@ -324,11 +321,10 @@ function updateUI(_logMsg) {
     }
 
     if (state.hasOwnProperty('queueSong')) {
-        $("#popupdialog").css("display", "block");
+        $("#popupdialog").css("display", "inline-block");
         state.popupDialog = playList[state.queueSong] + " queued";
         $("#popupdialog").text(state.popupDialog);
         $("#popupdialog").delay(5000).hide(0);  
-
         delete state.queueSong;
     } 
 
@@ -368,15 +364,6 @@ function setupWebSocket() {
 
         updateUI("client.onmessage");    
     } // client.onmessage = function(_response) {
-       
-    $("body").css("text-align","center");
-    $("body").css("font-weight","bold");
-    $("body").css("font-size","24px");
-    $("#clock").css("margin-left","-410px");
-    $("#setvolume\\/mute").css("left", (screen.width / 2) - (("Press M to unmute".length / 2) * 14) + "px");    
-    $("#ispaused").css("margin-left","-420px");
-    $("#shuffleenabled").css("margin-left","-182px");
-    $("#songtitle").css("width","100%");
 } // function setupWebSocket() {
 
 function charsAllowed(_value) {
@@ -491,7 +478,7 @@ function drawChart(_logMsg) {
     var currentSongIndex = -1;
 
     var customTooltips = function(_ttModel) {
-        var ttElement = document.getElementById('charttooltip');
+        var chartToolTip = document.getElementById('charttooltip');
         var innerHTML = "<table>";
         var chartPopupIndex = -1;
 
@@ -502,12 +489,12 @@ function drawChart(_logMsg) {
             return;
         }
 
-        if (!ttElement) {
+        if (!chartToolTip) {
             log(TEXT,"creating tooltip div")
-            ttElement = document.createElement('div');
-            ttElement.id = 'charttooltip';
-            ttElement.innerHTML = innerHTML;
-            this._chart.canvas.parentNode.appendChild(ttElement);
+            chartToolTip = document.createElement('div');
+            chartToolTip.id = 'charttooltip';
+            chartToolTip.innerHTML = innerHTML;
+            this._chart.canvas.parentNode.appendChild(chartToolTip);
         }
 
         chartPopupIndex = this._active[0]._index;
@@ -526,50 +513,50 @@ function drawChart(_logMsg) {
 
         // highlight currently playing song
         if (chartPopupIndex == songLog[songLog.length - 1]) {
-            ttElement.style.color = "#fd1";
-            ttElement.style.border = "1px solid #fd1";
+            chartToolTip.style.color = "#fd1";
+            chartToolTip.style.border = "1px solid #fd1";
             innerHTML += '<thead><tr><th>' + playList[chartPopupIndex] + '</th></tr></thead>';
             } else {
-                    ttElement.style.color = "#0d0";
-                    ttElement.style.border = "1px solid #0d0";
+                    chartToolTip.style.color = "#0d0";
+                    chartToolTip.style.border = "1px solid #0d0";
                     innerHTML += '<thead><tr><th>' + playList[chartPopupIndex] + '</th></tr></thead>';
                     }
 
         innerHTML += '<tbody><tr><td>&nbsp<td></tr><tr><td>Right click for songs ' + (showPlayed ? "not" : "") + ' played.</td></tr></tbody></table>';
 
-        ttElement.querySelector('table').innerHTML = innerHTML;
-        ttElement.style.opacity = 1;
-        ttElement.style.left    = (_ttModel.caretX / 1.4) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
+        chartToolTip.querySelector('table').innerHTML = innerHTML;
+        chartToolTip.style.opacity = 1;
+        chartToolTip.style.left    = (_ttModel.caretX / 1.4) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
     };  // var customTooltips = function(_ttModel) {
 
     $("#chartcontainer").css("display","inline-block");
     
     currentSongIndex = songLog[songLog.length - 1];
     chartData.length = playList.length;
+    barColors.length = playList.length;
     chartData.fill(0);
+    barColors.fill(document.body.style.color);
     
-    for (var i = 0; i < songLog.length;i++) { 
+    for (var i = 0; i < songLog.length;i++) {
         barColors[songLog[i]] = document.body.style.color;
-        chartData[songLog[i]]++;
-
-        if (yMax < chartData[songLog[i]])
-            yMax = chartData[songLog[i]] + 1;
+        chartData[songLog[i]] = i;
     }
 
-    // highlight currently playing
-    barColors[currentSongIndex]    = "#fff";
-    chartData[currentSongIndex]    = yMax;
-
-    if (!showPlayed) // show songs not played
-        for (var i = 0; i < playList.length;i++) 
-            if (chartData[i] == 0) {
-                barColors[i] = document.body.style.color;
-                chartData[i] = 1;
-                chartData[currentSongIndex] = 2;
-            } else {
+    if (!showPlayed) { 
+        for (var i = 0; i < chartData.length;i++) {
+            if (chartData[i] > 0) {
+                barColors[i] = "#000";
                 chartData[i] = 0;
-                chartData[currentSongIndex] = 2;
-            }
+            } else {
+                    barColors[i] = document.body.style.color;
+                    chartData[i] = 1;
+                    }
+        
+        chartData[currentSongIndex] = 2;
+        }
+    }
+
+    barColors[currentSongIndex] = "#fd1"; // highlight currently playing
 
     if (chart)
         chart.destroy();
@@ -598,12 +585,12 @@ function drawChart(_logMsg) {
             },
             scales: {
                 xAxes: [{ 
+                        beginAtZero: true,
                         ticks: {
                             autoSkip: false,
                             fontColor: '#0d0',
                             fontSize: '16',
                             callback: function(_value, _index, _values) {
-                                if (playList[_index] != undefined)                         
                                     if ((playList[_index].slice(0,1) != lastLetter) && (_index - lastIndex > 40) && (!showPlayed || songLog.includes(_index))) {
                                         lastLetter = playList[_index].slice(0,1);
                                         lastIndex = _index;
