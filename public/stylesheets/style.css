@@ -177,7 +177,7 @@ table {
 #setvolume\/mute,#popupdialog { 
     padding: 20px;
     position: fixed;
-    top: 50%;
+    top: 40%;
     left: 50%;
     transform: translateX(-50%);
     color: #fd1;

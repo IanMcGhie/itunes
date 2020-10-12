@@ -52,13 +52,14 @@ Number.prototype.toMMSS = function() {
     return minutes + ":" + seconds;
 } // Integer.prototype.toMMSS = function() {
 
-setTimeout(function() {
+setTimeout(() => {
 	execFile('lynx', ['-auth=admin:adminjam','--dump','http://winamp:8000/admin/stats.xsl'], (_err, _stdio, _stderr) => {
 		state.total_listeners = parseInt(_stdio.split('listener_connections')[1]);
 		state.current_listeners = parseInt(_stdio.split('listeners')[1])
 	});
 }, 60000);    
 
+getPlayList();
 watchPlayList();
 setVolume(state.volume);
 setupExpress();
@@ -68,24 +69,17 @@ setupWebsocket();
 execFile('xmms', ['-Son','-pf']);
 
 async function watchPlayList()  {
-	getPlayList();
 	log(TEXT,"watching playlist -> " + playListFile);
 
-	try {		
-		await FileSystem.watchFile(playListFile, async(curr, prev) => {
-			log(TEXT, "playlist changed");
-try {
-			await getPlayList().then(() => {
-				log(TEXT, "sending state to clients");
-				state.playList = playList;
-				state.songLog = songLog;
-				state.popupDialog = "Playlist changed";
-				sendState("BROADCAST", "playlist changed");
-			});
-} catch (_err) { log(TEXT,"getPlayList() error -> " + _err); } 
-
-		});
-	} catch (_err) { log(TEXT,"watchFile error -> " + _err); } 
+	 FileSystem.watchFile(playListFile, (curr, prev) => {
+		log(TEXT, "playlist changed");
+		getPlayList();
+		log(TEXT, "sending state to clients");
+		state.playList = playList;
+		state.songLog = [];
+		state.popupDialog = "Playlist changed";
+		sendState("playlist changed");
+	});
 }; // async function watchPlatList()  {
 
 function connectXmmsToDarkice() {
@@ -108,6 +102,38 @@ function connectXmmsToDarkice() {
         execFile('jack_connect', [ darkiceJackPorts[1], xmmsJackPorts[1] ]);
     }); // execFile('jack_lsp',(_err,_stdio,_stderr) => {
 }
+
+/* xmms monday.pls file looks like this
+[playList]
+NumberOfEntries=5297
+File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
+File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
+File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
+*/
+function getPlayList() {
+	log(TEXT,"getPlayList()");
+
+	let file = FileSystem.readFileSync(playListFile);
+	let lines = file.toString().split("\n");
+
+	playList 	 = [];
+	playListPath = [];
+
+	log(TEXT, lines.length + " lines in playlist")
+
+    lines.forEach ((_line) => {
+    	if (_line.toLowerCase().includes(".flac") || _line.toLowerCase().includes(".m4a")) 
+    		throw "!! Found non mp3 file in playlist !!\n" + _line;
+
+        if (_line.includes('File') && _line.toLowerCase().includes(".mp3")) {
+            playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
+            playListPath.push(_line.split("//")[1]);
+        }
+	}); // lines.forEach (_line => {
+	
+    log(TEXT, "getPlayList() " + playList.length + " songs in playlist");
+} // function getPlayList() {
+	
 function log(_type, _msg) {
     if (DEBUG)
         if (_type == TEXT)
@@ -116,16 +142,17 @@ function log(_type, _msg) {
 	            	console.dir(_msg);
 }
 
-function sendState(_dontSendTo, _logMsg) {
-    log(TEXT,"sendState(" + _dontSendTo + ", " + _logMsg + ")");
+function sendState(_logMsg) {
+    log(TEXT,"sendState(" + _logMsg + ")");
     log(DIR, state);
 
-    for (let i = 0; i < clients.length; i++) 
-        if (_dontSendTo == 'BROADCAST' || clients[i].remoteAddress != _dontSendTo) {
+    for (let i = 0; i < clients.length; i++) {
+//        if (_dontSendTo == 'BROADCAST' || clients[i].remoteAddress != _dontSendTo) {
             log(TEXT, "sending state to " + clients[i].remoteAddress);
             clients[i].sendUTF(JSON.stringify({ state: state }));
-        } else 
-            log(TEXT, "Not sending state to " + clients[i].remoteAddress);
+  //      } else 
+    //        log(TEXT, "Not sending state to " + clients[i].remoteAddress);
+}
 
         if (state.hasOwnProperty("queueSong")) 
         	delete state.queueSong;
@@ -138,7 +165,7 @@ function sendState(_dontSendTo, _logMsg) {
 
         if (state.hasOwnProperty("popupDialog")) 
         	delete state.popupDialog;
-} // function sendState(_sendTo, _logMsg) {
+} // function sendState( _logMsg) {
 
 function setVolume(_params) {
     if (_params == 'volup')
@@ -194,7 +221,7 @@ function setupExpress() {
 				case "pause":
 					xmmsCmd('-t');
 					state.pause = !state.pause;
-					sendState(dontSendTo, arg1);
+					sendState(arg1);
 				break;
 
 				case "next":
@@ -204,7 +231,7 @@ function setupExpress() {
 				case "shuffle" || "shuffleenabled":
 					xmmsCmd('-S');
 					state.shuffle = !state.shuffle;
-					sendState(dontSendTo, arg1);
+					sendState(arg1);
 				break;
 
 				case "getstate":
@@ -227,13 +254,14 @@ function setupExpress() {
 					if (!dontSendTo.includes(gateway))
 						setVolume(arg2);
 
-					sendState(dontSendTo, "setvolume -> " + arg2);
+					sendState("setvolume -> " + arg2);
 				break;
 
 				case "queuesong": 	// * really hurt *
 					execFile('xmms', ['-Q', playListPath[arg2]]);
 					state.queueSong = parseInt(arg2);
-					sendState(dontSendTo, arg1 + '/' + arg2); 
+					state.popupDialog = playList[state.queueSong] + " queued";
+					sendState(arg1 + '/' + arg2); 
 				break;
 
 				case "playsong":
@@ -257,7 +285,7 @@ function setupExpress() {
 					} else {
 							songLog.push(arg2);
 							state.songLog = songLog;
-							sendState('BROADCAST', arg1 + '/' + arg2);
+							sendState(arg1 + '/' + arg2);
 							connectXmmsToDarkice();
 					}
 				break;
@@ -270,7 +298,7 @@ function setupExpress() {
 
 					execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 						state.progress = seekTo;
-						sendState("BROADCAST", arg1 + '/' + arg2)
+						sendState(arg1 + '/' + arg2)
 					});
 				break;
 
@@ -278,51 +306,11 @@ function setupExpress() {
 					log(TEXT, dontSendTo + " ** error case option missing ** -> " + arg1);
 			} // switch (arg1) { 
 
-		log(TEXT, dontSendTo + " -> _response.end()");
+		log(TEXT, "_response.end() dontSendTo ->  " + dontSendTo + " arg1 -> " + arg1 + " arg2 -> " + arg2);
 		_response.end();
 		}); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
 	}); // App.get('/:arg1/:arg2?', (_request, _response) => {
 }
-
-
-/* xmms monday.pls file looks like this
-[playList]
-NumberOfEntries=5297
-File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
-File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
-File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
-*/
-async function getPlayList() {
-		log(TEXT,"getPlayList()");
-	//try {
-		 await FileSystem.readFile(playListFile, (_err, _data) => {
-			
-			if (_err) throw _err;
-
-			let lines = _data.toString().split("\n");
-			log(TEXT, lines.length + " lines in playlist")
-		   	let index = 0;
-
-			playList 	 = [];
-			playListPath = [];
-			
-		    lines.forEach ((_line) => {
-		    	if (_line.toLowerCase().includes(".flac") || _line.toLowerCase().includes(".m4a")) 
-		    		throw "!! Found non mp3 file in playlist !!\n" + _line;
-
-		        if (_line.includes('File') && _line.toLowerCase().includes(".mp3")) {
-		            playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
-		            playListPath.push(_line.split("//")[1]);
-		        }
-			}); // lines.forEach (_line => {
-			
-		    log(TEXT, "getPlayList() " + playList.length + " songs in playlist");
-		});
-	//} catch (_err) {
-//		log(TEXT,"getPlayList() error -> " + _err);
-//	}
-
-} // function getPlayList() {
 
 function setupWebsocket() {
     log(TEXT,"setupWebsocket()");
