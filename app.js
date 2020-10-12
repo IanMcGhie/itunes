@@ -4,7 +4,7 @@
  * 2. xmms preferences...general plugins...song change plugin...set command to lynx --dump winamp:3000/newsong/%f
  * 3. the async version of this works with firefox...maybe chrome....all other browsers will not be async..for my bb to work
  */
-const DEBUG			= true;
+const DEBUG 		= true;
 const playListFile 	= "/home/ian/monday.pls";
 const { execFile } 	= require('child_process');
 const FileSystem 	= require('fs');
@@ -13,7 +13,7 @@ const Http 			= require('http');
 const WSServer 		= require('websocket').server;
 const NodeID3 		= require('node-id3');
 const defaultGateway = require('default-gateway');
-const { gateway }   = defaultGateway.v4.sync();
+const { gateway }	= defaultGateway.v4.sync();
 const app 			= Express();
 const TEXT 			= true;
 const DIR 			= false;
@@ -28,7 +28,7 @@ let songLog 		= [];
 let playList 		= [];
 let playListPath	= [];
 let clients 		= [];
-let state			= {
+let state 			= {
     duration: 0,
     mute: false,
     pause: false,
@@ -74,8 +74,8 @@ async function getDarkIceStats() {
 			log(TEXT,"getDarkIceStats() current listeners -> " + state.currentlisteners + " total listeners -> " + state.totallisteners);
 			_resolve();
 		});
-	});
-}
+	}); // return new Promise((_resolve, _reject) => {
+} // async function getDarkIceStats() {
 
 async function xmmsCmd(_command) {
 	var args;
@@ -96,8 +96,9 @@ async function xmmsCmd(_command) {
 	    await execFile('xmms',[args], (_err,_stdio,_stderr) => { 
 		    _resolve();
     	}); 
-	});
-}
+	}); // return new Promise(async (_resolve, _reject) => {
+} // async function xmmsCmd(_command) {
+
 async function getProgress() {
 	return new Promise((_resolve, _reject) => {
 		execFile('qxmms', ['-lnS'], (_err, _stdio, _stderr) => {
@@ -106,8 +107,8 @@ async function getProgress() {
 			log(TEXT,"getProgress() duration -> " + state.duration + " state.progress -> " + state.progress);
 			_resolve();
 		});
-	});
-}
+	}); // 	return new Promise((_resolve, _reject) => {
+} // async function getProgress() {
 
 async function processRequest(_request, _response) {
 	return new Promise(async (_resolve, _reject) => {
@@ -207,8 +208,7 @@ async function processRequest(_request, _response) {
 
 			case "seek":
 				let seekTo = parseInt(state.duration * (arg2 / 100));
-				log(TEXT,"seekTo -> " + seekTo);
-				log(TEXT,"seekTo.toMMSS -> " + seekTo.toMMSS());
+				log(TEXT,"seekTo -> " + seekTo + "seekTo.toMMSS -> " + seekTo.toMMSS());
 
 				execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 					state.progress = seekTo;
@@ -224,34 +224,35 @@ async function processRequest(_request, _response) {
 } // function processRequest(_request) {
 
 async function setupWebsocket() {
-    log(TEXT,"setupWebsocket()");
+	log(TEXT,"setupWebsocket()");
 
-    const wsHttp = Http.createServer((_request, _response) => {
-        log(TEXT,_request.socket.remoteAddress + ' recieved websocket request -> ' + _request.url);
-        _response.writeHead(404);
-        _response.end();
-    }).listen(webSocketPort);
+	const wsHttp = Http.createServer((_request, _response) => {
+		log(TEXT,_request.socket.remoteAddress + ' recieved websocket request -> ' + _request.url);
+		_response.writeHead(404);
+		_response.end();
+	}).listen(webSocketPort); // const wsHttp = Http.createServer((_request, _response) => {
 
-    const wsServer = new WSServer({
-        url: "ws://localhost:" + webSocketPort,
-        httpServer: wsHttp
-    }); 
+	const wsServer = new WSServer({
+		url: "ws://localhost:" + webSocketPort,
+		httpServer: wsHttp
+	}); // const wsServer = new WSServer({
 
 	wsServer.on('connect', (_connection) => {
 		log(TEXT, _connection.socket.remoteAddress + " new websocket connection");
 		clients.push(_connection);
-	});
+	}); // wsServer.on('connect', (_connection) => {
 
 	wsServer.on('request', (_request) => { 
 		log(TEXT, _request.socket.remoteAddress + " websocket request -> " + _request.resource);
 		_request.accept('winamp', _request.origin);
-	});
+	}); // wsServer.on('request', (_request) => { 
 
-    wsServer.on('close', (_connection) => {
-        clients = clients.filter((el, idx, ar) => {
-            return el.connected;
-        });
-    log(TEXT,_connection.remoteAddress + " -> websocket disconnected");
+	wsServer.on('close', (_connection) => {
+		clients = clients.filter((el, idx, ar) => {
+			return el.connected;
+		});
+
+	    log(TEXT,_connection.remoteAddress + " -> websocket disconnected");
     }); //  connection.on('close', (_connection) => {
 } // function setupWebsocket() {
 
@@ -286,11 +287,11 @@ File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
 function getPlayList() {
 	log(TEXT,"getPlayList()");
 
-	let file = FileSystem.readFileSync(playListFile);
-	let lines = file.toString().split("\n");
+	let file 	= FileSystem.readFileSync(playListFile);
+	let lines 	= file.toString().split("\n");
 
-	playList 	 = [];
-	playListPath = [];
+	playList 	= [];
+	playListPath= [];
 
 	lines.forEach ((_line) => {
 		if (_line.toLowerCase().includes(".flac") || _line.toLowerCase().includes(".m4a")) 
@@ -306,47 +307,47 @@ function getPlayList() {
 } // function getPlayList() {
 
 function log(_type, _msg) {
-    if (DEBUG)
-        if (_type == TEXT)
-            console.log(Date().split('GMT')[0] + _msg);
-                else 
-	            	console.dir(_msg);
-}
+	if (DEBUG)
+		if (_type == TEXT)
+			console.log(Date().split('GMT')[0] + _msg);
+				else 
+					console.dir(_msg);
+} // function log(_type, _msg) {
 
 function sendState(_logMsg) {
-    log(TEXT,"sendState(" + _logMsg + ")");
+	log(TEXT,"sendState(" + _logMsg + ")");
 
-    if (clients.length == 0) {
-	    log(TEXT, "sendState() -> no clients connected. returning");
-	    return;
+	if (clients.length == 0) {
+		log(TEXT, "sendState() -> no clients connected. returning");
+		return;
 	}
 
-    log(DIR, state);
+	log(DIR, state);
 
-    for (let i = 0; i < clients.length; i++) {
+	for (let i = 0; i < clients.length; i++) {
 		log(TEXT, "sendState() sending state to -> " + clients[i].remoteAddress);
 		clients[i].sendUTF(JSON.stringify({ state: state }));
 	}
 
-    if (state.hasOwnProperty("queuesong")) {
-	    log(TEXT, "sendState() removing queuesong from state");
-    	delete state.queuesong;
-    }
+	if (state.hasOwnProperty("queuesong")) {
+		log(TEXT, "sendState() removing queuesong from state");
+		delete state.queuesong;
+	}
 
-    if (state.hasOwnProperty("songlog")) {
-	    log(TEXT, "sendState() removing songlog from state");
-    	delete state.songlog;
-    }
+	if (state.hasOwnProperty("songlog")) {
+		log(TEXT, "sendState() removing songlog from state");
+		delete state.songlog;
+	}
 
-    if (state.hasOwnProperty("playlist")) {
-	    log(TEXT, "sendState() removing playlist from state");
-    	delete state.playlist;
-    }
+	if (state.hasOwnProperty("playlist")) {
+		log(TEXT, "sendState() removing playlist from state");
+		delete state.playlist;
+	}
 
-    if (state.hasOwnProperty("popupdialog")) { 
-	    log(TEXT, "sendState() -> removing popupdialog from state");
-    	delete state.popupdialog;
-    }
+	if (state.hasOwnProperty("popupdialog")) { 
+		log(TEXT, "sendState() -> removing popupdialog from state");
+		delete state.popupdialog;
+	}
 } // function sendState( _logMsg) {
 
 function setVolume(_params) {
@@ -355,9 +356,9 @@ function setVolume(_params) {
             else if (_params == 'voldown')
                 state.volume--;
                     else if (_params == 'mute') 
-                        state.mute = !state.mute; 
-                    		else
-                        		state.volume = parseInt(_params);
+						state.mute = !state.mute; 
+							else
+								state.volume = parseInt(_params);
 
     log(TEXT,"setVolume(" + _params + ") state.volume -> " + state.volume + "%");
     execFile("amixer", ['-c', '1', '--', 'sset', 'Master', state.volume + "%"]);

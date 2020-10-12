@@ -317,7 +317,6 @@ function setupKBEvents() {
 
             switch (_event.which) {
                 case 13:
-                    //$.get("playsong/" + getSearchInputSongIndex());
                     sendCommand("playsong/" + getSearchInputSongIndex(), "playlist keyup");
                 break;
                 
