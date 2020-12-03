@@ -5,7 +5,7 @@ var DEBUG      = true;
 var itsTheBB   = true;
 var showPlayed = true;
 var TEXT       = true;
-var DIR        = false;
+
 var newSelect  = false;
 var chart;
 var userAdjustingProgressBar = false;
@@ -21,14 +21,17 @@ var state      = {
 };
 
 Number.prototype.toMMSS = function() {
-    var minutes = parseInt(this / 60);
-    var seconds = parseInt(this % 60);
+    var minutes = parseInt(Math.abs(this) / 60);
+    var seconds = parseInt(Math.abs(this) % 60);
 
     if (minutes < 10) 
         minutes = "0" + minutes;
     
     if (seconds < 10)
         seconds = "0" + seconds;
+
+    if (Math.abs(this) < 0)
+        minutes = "-" + minutes;
 
     return minutes + ":" + seconds;
 } // Integer.prototype.toMMSS = function() {
@@ -48,7 +51,7 @@ $(document).ready(function () {
     setupClock();
     setupTitleTicker();
     sendCommand("getstate/withplaylist");
-    //window.onresize = drawChart;
+    // window.onresize = drawChart;
 }); // $(document).ready(function() {
 
 function charsAllowed(_value) {
@@ -205,7 +208,6 @@ function getSearchInputSongIndex() {
     return index;
 }
 
-//log(TEXT, "setupWebSocket()");
 function log(_type, _msg) {
     if (DEBUG){
         if (_type == TEXT)
@@ -218,13 +220,13 @@ function log(_type, _msg) {
 
 function sendCommand(_command) {
     log(TEXT, "sendCommand(" + _command + ")");
-console.log("and itsTheBB -> " + itsTheBB);
+    log(TEXT, "and itsTheBB -> " + itsTheBB);
+ 
+    if (itsTheBB && _command == "getstate") 
+        return;
 
-if (itsTheBB) {
-    state.itsTheBB = itsTheBB;
-    alert("itsTheBB -> " + itsTheBB);
-}
-
+    if (itsTheBB) 
+        state.itsTheBB = itsTheBB;
 
     // these are the commands that we dont wait for the result ...& update the ui right away 
     var commands = ["setvolume/mute", "shuffle", "pause"];
@@ -246,14 +248,13 @@ if (itsTheBB) {
         updateUI('sendCommand(' + _command + ')');
 
     request.open('GET', '/' + _command, false);
-//    request.send(null);
-log(TEXT, "SENDINGSENDINGSENDINGSENDINGSENDINGSENDINGSENDING");
-request.send();
-log(TEXT, "SENTSENTSENTSENTSENTSENTSENTSENTSENTSENTSENTSENT");
+
+    log(TEXT, "SENDING");
+    request.send();
+    log(TEXT, "SENT");
 
     if (request.response) {
-log(TEXT, "RECEIVEDRECEIVEDRECEIVEDRECEIVEDRECEIVEDRECEIVED");
-//        log(TEXT,  "sendCommand(" + _command + ") state received");
+        log(TEXT, "RECEIVED");
         state = JSON.parse(request.response);
         console.dir(state);
 
@@ -272,12 +273,10 @@ function setupClock() {
     log(TEXT, "setupClock()");
 
     setInterval(function() {
-        if (state.duration - state.progress > -1) 
+        if (state.progress > 0)
             $("#clock").text('-' + (state.duration - state.progress).toMMSS());
-                else {
-                    sendCommand("getstate");
-                    //$("#clock").text('-00:00');
-                }
+                else 
+                    sendCommand("getstate");          
 
         if (!state.pause) {            
             var left = (++state.progress / state.duration) * 375;
@@ -285,8 +284,8 @@ function setupClock() {
             if (state.progress >= state.duration) {
                 left = 375;
 
-        //        if (itsTheBB)
-        //            sendCommand("getstate");
+            //        if (itsTheBB)
+                sendCommand("getstate");
             } else
                 $("#progressbarhandle").css("left", left);
 
@@ -317,7 +316,7 @@ function setupKBEvents() {
 
             case 67 || 99: // C c
                 sendCommand("pause");
-                sendCommand("getstate");
+              //  sendCommand("getstate");
             break;
 
             case 83 || 115: // S s
@@ -409,10 +408,7 @@ function setupMouseEvents() {
         },
         stop: function(_event, _ui) {
             sendCommand("seek/" + parseInt((_event.target.offsetLeft / 375) * 100), "seek");
-            //$("#progressbarhandle").css("left", parseInt(_event.target.offsetLeft));
-            //state.progress = parseInt(_event.target.offsetLeft / 375);
             userAdjustingProgressBar = false;
-            //updateUI(false, "userAdjustingProgressBar -> false");
         }  
     });
 
@@ -426,9 +422,13 @@ function setupPlayList() {
 
     playList = state.playList;
     songLog  = state.songLog;
+
+    log(TEXT, "delete state.playList");
     delete state.playList;
+
+    log(TEXT, "delete state.songLog");
     delete state.songLog;
-    
+
     $("#playlist").attr("size", playList.length < 20 ? playList.length : 20);
     $("#playlist").empty();
 
@@ -441,8 +441,8 @@ function setupPlayList() {
         select.add(option);
     } 
 
-    //if (!itsTheBB) 
-  //      drawChart("setupPlaylist()");
+    if (!itsTheBB) 
+        drawChart("setupPlaylist()");
 
     setupSearch();
 } // function setupPlaylist() {
@@ -539,7 +539,7 @@ function setupVolumeControl() {
     log(TEXT, "setupVolumeControl()");
  
     $("#volume").on("slidechange", function(_event, _ui) {
-        log(DIR, _ui);
+        log(!TEXT, _ui);
         // vol 0% -> 40 153 28  vol 100% -> 225 31 38
         //           28  99 1c               e1 1f 26 
         var r = toHex(_ui.value * 1.85 + 40);
@@ -577,24 +577,25 @@ function setupWebSocket() {
     client.onmessage = function(_message) {
         var newState = JSON.parse(_message.data).state;
 
-        log(TEXT,  "onmessage() received");
-        log(DIR, newState);
+        log(TEXT, "onmessage() received");
+        log(!TEXT, newState);
 
         if (newState.hasOwnProperty('songLog'))
             if (JSON.parse(newState.data.state).songLog != songLog.length) {
                 log(TEXT,  "ws msg received new song... resetting page title"); 
                 $("#pagetitle").text("");
                 songLog = state.songLog;
-//                if (!itsTheBB) 
-  //              drawChart("setupWebSocket()");
+    
+    //            if (!itsTheBB) 
+      //              drawChart("setupWebSocket()");
 
                 delete state.songLog;
             } // if (JSON.parse(newState.data.state).songLog != songLog.length) {
 
         state = newState;
         
-        if (state.hasOwnProperty('songLog') && state.hasOwnProperty('playList')) 
-            setupPlayList();
+//        if (state.hasOwnProperty('songLog') && state.hasOwnProperty('playList')) 
+  //          setupPlayList();
 
         updateUI("ws msg received");
     } // client.onmessage = function(_message) {

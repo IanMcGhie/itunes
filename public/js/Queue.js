@@ -8,8 +8,20 @@ module.exports = class Queue {
     } 
                   
     async enQueue(_element) {     
-        // adding element to the queue 
+        if (_element != undefined) {
+            this.log.text('new song not pushing this into queue');
+        return;
+        }
+
+    /*    if (_element.command == "newsong") {
+            this.log.text('new song not pushing this into queue');
+            return;
+        }*/
+
         _element.id = this.id++;
+
+        console.log("queueing _element -> " + _element.command + " id -> " + this.id);
+
         this.items.push(_element);
         this.printQueue();
         this.deQueue();
@@ -19,7 +31,6 @@ module.exports = class Queue {
         if(this.isEmpty()) 
             return 'Underflow'; 
         
-//        return this.sendState();
         this.sendState();
     } 
 
@@ -33,41 +44,40 @@ module.exports = class Queue {
     } 
   
     sendState(_broadcast) {
-        this.log.text('sendState()');
+        this.log.text('Queue.sendState()');
 
-        if (this.items.length == 0 || this.front().clients == 0) {
-            this.log.text('sendState() items in queue -> ' + this.front().clients.length + ' clients connected -> ' + this.front().clients);
+        if (!this.items) {
+            this.log.text('sendState() queue is empty... returning');
             return;
         }
 
-    //    this.logger.log('TEXT','typeof queue msg -> ' + JSON.parse(this.items[0]).command);
+        if (!this.clients){
+            this.log.text('sendState() queue is empty... returning');
+        }
 
- //      getXmmsState().then(() => {
-            for (let i = 0; i < this.front().clients.length; i++)
-//                for(let j = 0; j < this.items[i].clients.length; j++) {
-
+        this.log.text('sendState() items in queue -> ' + this.front().clients.length + ' clients connected -> ' + this.front().clients);
+            for (let i = 0; i < this.front().clients.length; i++) {
                     if (!this.front().clients[i].remoteAddress || _broadcast == 'BROADCAST') {
                         this.log.text('sendState() sending state to -> ' + this.items[i].clients[j].remoteAddress);
                         this.front().clients[i].sendUTF(this.items[i]);
-                        } else
+                        } else {
                             this.log.text('sendState() NOT sending state to -> ' + this.items[i].clients[j].remoteAddress);
-  //              }
+                        }
+                }
+
 /*
             if (this.front().state.hasOwnProperty('queuesong')) {
                 this.log.text('sendState() removing queuesong from state');
                 delete mState.queuesong;
             }
 */
-      //  });        
-
         this.log.text('removing queue id #' + this.items[0].id + ' from queue. ')
         this.items.shift();
 
         if (this.items.length > 0)
             printQueue();
         
-        return this.items; 
-
+        return this.items 
     }
 
     isEmpty() { 
@@ -75,11 +85,6 @@ module.exports = class Queue {
     } 
 
     printQueue() { 
-//        var str = ''; 
-        
-//        for(var i = 0; i < this.items.length; i++) 
-  //          str += this.items[i] + ' '; 
-
         this.log.text(this.items.length + ' items queued');
         this.log.obj(this.items);
     } 
