@@ -5,7 +5,6 @@ var DEBUG      = true;
 var itsTheBB   = true;
 var showPlayed = true;
 var TEXT       = true;
-
 var newSelect  = false;
 var chart;
 var userAdjustingProgressBar = false;
@@ -13,12 +12,7 @@ var serverUrl  = "winamp:6502";
 var playList   = [];
 var songLog    = [];
 var TEXT       = 0;
-var OBJ        = 1; 
-var state      = { 
-    duration: 0,
-    progress: 0,
-    volume: 40
-};
+var state      = { volume: 40 };
 
 Number.prototype.toMMSS = function() {
     var minutes = parseInt(Math.abs(this) / 60);
@@ -81,7 +75,7 @@ function drawChart(_logMsg) {
         }
 
         if (!chartToolTip) {
-            log(TEXT, "creating tooltip div")
+            log(TEXT, "drawChart() -> creating tooltip div")
             chartToolTip = document.createElement('div');
             chartToolTip.id = 'charttooltip';
             chartToolTip.innerHTML = innerHTML;
@@ -209,52 +203,47 @@ function getSearchInputSongIndex() {
 }
 
 function log(_type, _msg) {
-    if (DEBUG){
+    if (DEBUG) {
         if (_type == TEXT)
             console.log(Date().split('GMT')[0] + _msg);
                 else
                     console.log(_msg);
-
     }
 }
 
 function sendCommand(_command) {
-    log(TEXT, "sendCommand(" + _command + ")");
-    log(TEXT, "and itsTheBB -> " + itsTheBB);
+    log(TEXT, "sendCommand(" + _command + ") itsTheBB -> " + itsTheBB);
  
     if (itsTheBB && _command == "getstate") 
         return;
 
+    // these are the commands that we dont wait for the result ...& update the ui right away 
+    var commands = ["setvolume/mute", "shuffle", "pause"];
+    var request  = new XMLHttpRequest();
+
     if (itsTheBB) 
         state.itsTheBB = itsTheBB;
 
-    // these are the commands that we dont wait for the result ...& update the ui right away 
-    var commands = ["setvolume/mute", "shuffle", "pause"];
-    var request = new XMLHttpRequest();
-
     if (_command.split("/")[0] == "queuesong")
         state.popupdialog = playList[_command.split("/")[1]] + " queued";
- 
-    if (_command == "setvolume/mute")
-        state.mute = !state.mute;
-
-    if (_command == "shuffle") 
-        state.shuffle = !state.shuffle;
-
-    if (_command == "pause") 
-        state.pause = !state.pause;
-
-    if (commands.indexOf(_command) > -1 || state.hasOwnProperty("popupdialog"))
-        updateUI('sendCommand(' + _command + ')');
+            else if (_command == "setvolume/mute")
+                state.mute = !state.mute;
+                    else if (_command == "shuffle") 
+                        state.shuffle = !state.shuffle;
+                            else if (_command == "pause") 
+                                state.pause = !state.pause;
+                                    else if (commands.indexOf(_command) > -1 || state.hasOwnProperty("popupdialog"))
+                                        updateUI('sendCommand(' + _command + ')');
+                                            else if (_command == 'getstate')
+                                                $("#pagetitle").text('');
 
     request.open('GET', '/' + _command, false);
-
-    log(TEXT, "SENDING");
     request.send();
-    log(TEXT, "SENT");
+
+    log(TEXT, "sendCommand(" + _command + ") command sent");
 
     if (request.response) {
-        log(TEXT, "RECEIVED");
+        log(TEXT, "sendCommand(" + _command + ") command received");
         state = JSON.parse(request.response);
         console.dir(state);
 
@@ -265,18 +254,23 @@ function sendCommand(_command) {
 
         if (commands.indexOf(_command) == -1)
             updateUI("sendCommand(" + _command + ")");
-    } else
-        log(TEXT,  "empty response")
+    } else {
+        log(TEXT, "sendCommand(" + _command + ") empty response");
+    }
 } // function sendCommand(_command) {
 
 function setupClock() {
     log(TEXT, "setupClock()");
 
     setInterval(function() {
-        if (state.progress > 0)
+        if (state.duration - state.progress > 0)
             $("#clock").text('-' + (state.duration - state.progress).toMMSS());
-                else 
+                else {
+                    log(TEXT, 'duration -> ' + state.duration +' progress -> ' + state.progress + ". resetting them to 0");
+                    state.progress = 1;
+                    state.duration = 0;
                     sendCommand("getstate");          
+                }
 
         if (!state.pause) {            
             var left = (++state.progress / state.duration) * 375;
@@ -285,7 +279,7 @@ function setupClock() {
                 left = 375;
 
             //        if (itsTheBB)
-                sendCommand("getstate");
+//                sendCommand("getstate");
             } else
                 $("#progressbarhandle").css("left", left);
 
@@ -423,10 +417,10 @@ function setupPlayList() {
     playList = state.playList;
     songLog  = state.songLog;
 
-    log(TEXT, "delete state.playList");
+    log(TEXT, "setupPlaylist() delete state.playList");
     delete state.playList;
 
-    log(TEXT, "delete state.songLog");
+    log(TEXT, "setupPlaylist() delete state.songLog");
     delete state.songLog;
 
     $("#playlist").attr("size", playList.length < 20 ? playList.length : 20);
@@ -440,6 +434,8 @@ function setupPlayList() {
         option.text = playList[i];
         select.add(option);
     } 
+
+    log(TEXT, "setupPlaylist() " + playList.length + " songs in playList");
 
     if (!itsTheBB) 
         drawChart("setupPlaylist()");
@@ -527,12 +523,11 @@ function setupTitleTicker() {
     log(TEXT, "setupTitleTicker()");
 
     setInterval(function() {
-        if (playList && songLog)
-            if (($("#pagetitle").text().length > 0))
-                $("#pagetitle").text($("#pagetitle").text().slice(1));
-                    else
-                        $("#pagetitle").text(playList[state.currentlyPlaying]);
-    }, 250); 
+        if (($("#pagetitle").text().length > 0))
+            $("#pagetitle").text($("#pagetitle").text().slice(1));
+                else
+                    $("#pagetitle").text(playList[state.currentlyPlaying]);
+    }, 250);
 } // function setupTitleTicker() {
 
 function setupVolumeControl() {
@@ -549,12 +544,12 @@ function setupVolumeControl() {
         $("#volume").css("background-color","#" + r + g + b);
 
         if (state.hasOwnProperty('volume')) {
-            log(TEXT, "volume slidechange callback fired... not sending volume back to server. Removing volume from state volume -> " + state.volume);
+            log(TEXT, "setupVolumeControl() volume slidechange callback fired... not sending volume back to server. Removing volume from state volume -> " + state.volume);
             delete state.volume;
             return;
         }
 
-        log(TEXT, "volume slidechange callback fired... sending new value -> " +  _ui.value + " color -> #" + r + g + b);
+        log(TEXT, "setupVolumeControl() volume slidechange callback fired... sending new value -> " +  _ui.value + " color -> #" + r + g + b);
         $.get("setvolume/" + _ui.value);
     }); // $("#volume").on("slidechange", function(_event, _ui) {
 
@@ -577,18 +572,19 @@ function setupWebSocket() {
     client.onmessage = function(_message) {
         var newState = JSON.parse(_message.data).state;
 
-        log(TEXT, "onmessage() received");
+        log(TEXT, "client.onmessage()");
         log(!TEXT, newState);
 
         if (newState.hasOwnProperty('songLog'))
             if (JSON.parse(newState.data.state).songLog != songLog.length) {
-                log(TEXT,  "ws msg received new song... resetting page title"); 
+                log(TEXT,  "client.onmessage() message -> new song resetting page title"); 
                 $("#pagetitle").text("");
                 songLog = state.songLog;
     
     //            if (!itsTheBB) 
       //              drawChart("setupWebSocket()");
 
+                log(TEXT, "client.onmessage() delete state.songLog");
                 delete state.songLog;
             } // if (JSON.parse(newState.data.state).songLog != songLog.length) {
 

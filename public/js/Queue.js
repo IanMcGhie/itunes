@@ -9,8 +9,8 @@ module.exports = class Queue {
                   
     async enQueue(_element) {     
         if (_element != undefined) {
-            this.log.text('new song not pushing this into queue');
-        return;
+            this.log.text('new song not pushing this into queue _element -> ' + _element);
+            return;
         }
 
     /*    if (_element.command == "newsong") {
