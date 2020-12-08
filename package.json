@@ -23,7 +23,6 @@
     "websocket": "^1.0.31"
   },
   "devDependencies": {
-    "grunt-typedoc": "^0.2.4",
     "jest": "^26.0.1",
     "typedoc": "^0.17.8",
     "typescript": "^3.9.7"

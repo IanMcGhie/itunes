@@ -175,7 +175,7 @@ table {
     font-size: 10px;
 }
 
-#setvolume\/mute,#popupdialog { 
+#mutedialog,#popupdialog { 
     padding: 20px;
     position: fixed;
     top: 40%;
