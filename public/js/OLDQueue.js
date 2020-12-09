@@ -3,6 +3,8 @@ let TEXT = true;
 module.exports = class Queue { 
     // Array is used to implement a Queue 
     constructor(_debug) { 
+        log(TEXT, "Queue() constructor DEBUG -> " + _debug);
+
         this.items = [];
         this.id    = 0;
         this.debug = _debug;

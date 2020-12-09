@@ -4,7 +4,6 @@
  * 2. xmms preferences...general plugins...song change plugin...set command to lynx --dump winamp:3000/newsong/%f
  * 3. the async version of this works with firefox...maybe chrome....all other browsers will not be async..for my bb to work
  */
-const Queue 		= require('./public/js/Queue');
 const { execFile } 	= require('child_process');
 const FileSystem 	= require('fs');
 const Express 	   	= require('express');
@@ -20,24 +19,9 @@ const WSPort		= 6502;
 const playListFile 	= '/home/ian/monday.pls';
 
 let mp3Path 		= '';
-let MsgQueue		= new Queue(DEBUG);
 let songLog 		= [];
 let playList 		= [];
 let clients 		= [];
-
-//						command 	broadcast to  reply with 	sync client
-//									all except 	  new state
-//									sender 		  
-let commands 		= ['newsong',		true,		false,		false,
-						'next',			false,		false,		false,
-						'prev',			false,		false,		false,
-						'pause',		true,		false,		false,
-						'volume',		true,		false,		false,
-						'seek',			true,		false,		false,
-						'shuffle',		true,		false,		false,
-						'playsong',		true,		true,		false,
-						'mute',			true,		false,		false,
-						'queuesong',	true,		false,		false];
 
 let state = {
 	duration: 0,
@@ -101,7 +85,7 @@ function log(_type, _msg) {
     }
 }
 
-function newSong(_index) {
+function newSong(_index, _dontSendTo) {
 	if (_index > playList.length - 1)  { // queued mp3 at end of playlist
 		log(TEXT,'This is a queued song');
 		execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
@@ -121,25 +105,24 @@ function newSong(_index) {
 			log(!TEXT, songLog);
 
 	        if (clients.length > 0)
-	        	MsgQueue.sendState(clients); // send new state to clients
+	        	sendState(clients, _dontSendTo); // send new state to clients
 		} // } else {
-
-/*
-        connectXmmsToDarkice();
-        
-        await getState();
-
-        if (clients.length > 0)
-            sendState('SENDTOALL','/newsong/*'); // send new state to clients
-
-        setTimeout(() => {
-            _response.send(state);
-            _response.end();
-        },400);
-
-*/
-
 } // function newSong(_index) {
+
+function sendState(_clients, _dontSendTo) {
+    log(TEXT, 'sendState() connections -> ' + _clients.length);
+    log(TEXT, 'sendState() _dontSendTo -> ' + _dontSendTo);
+
+    if (_clients.length == 0)
+        log(TEXT, 'sendState() no connections... returning');
+    
+        for (let i = 0; i < _clients.length; i++) {
+            if (_clients[i].remoteAddress != _dontSendTo) {
+                log(TEXT, 'sendState() sending state to -> ' + _clients[i].remoteAddress);
+                clients[i].send(JSON.stringify({state: state}));
+            }
+    } // sendState(_clients) {
+}
 
 async function processRequest(_request, _response) {
 			const remoteAddress = _request.socket.remoteAddress; 
@@ -156,6 +139,7 @@ async function processRequest(_request, _response) {
 				case 'shuffle':
 				case 'shuffleenabled':
 					xmmsCmd(arg1);
+					sendState(clients, remoteAddress);
 				break;
 
 				case 'getstate':
@@ -172,31 +156,16 @@ async function processRequest(_request, _response) {
 				case 'setvolume':
 					if (!remoteAddress.includes(gateway)) {
 						setVolume(arg2);
-//try {						
-//						await MsgQueue.enQueue({'command': 'setvolume', 'connection': _request}).then(()=>{
-//							MsgQueue.sendState(clients);
-//						});
-//	} catch (_error) {
-//		log(TEXT, "ERROR -> " + _error);
-//	}
-log(TEXT, "what about now 1")
-						MsgQueue.enQueue({'command': 'setvolume', 'connection': arg2});
-log(TEXT, "what about now 2")
-
-						MsgQueue.sendState(clients);
-log(TEXT, "what about now 3")
-						
-
+						sendState(clients, remoteAddress);
 					} else
-						log(TEXT,remoteAddress + ' processRequest() ignoring request from gateway');
+						log(TEXT, remoteAddress + ' processRequest() ignoring request from gateway');
 				break;
 
 				case 'queuesong': 	// * really hurt *
 					execFile('xmms', ['-Q', mp3Path[arg2]]);
 					state.queueSong = parseInt(arg2);
 					state.popupDialog = playList[state.queueSong] + ' queued';
-					MsgQueue.sendState(clients);
-					//MsgQueue.sendState(remoteAddress, arg1 + '/' + arg2); 
+					sendState(clients, remoteAddress);
 				break;
 
 				case 'playsong':
@@ -204,7 +173,7 @@ log(TEXT, "what about now 3")
 				break;
 
 				case 'newsong':
-					newSong(parseInt(arg2) - 1);
+					newSong(parseInt(arg2) - 1, remoteAddress);
 				break;
 
 				case 'seek':
@@ -212,8 +181,7 @@ log(TEXT, "what about now 3")
 					
 					execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 						state.progress = seekTo;
-						MsgQueue.sendState(clients);
-						//MsgQueue.sendState(BROADCAST, arg1 + '/' + arg2);
+						sendState(clients, remoteAddress);
 					});
 				break;
 
@@ -248,6 +216,7 @@ function setupWebsocket() {
 	wsServer.on('connect', (_connection) => {
 		log(TEXT, _connection.socket.remoteAddress + " WS new connection. connections -> " + (clients.length + 1));
 		clients.push(_connection);
+		log(!TEXT, _connection.remoteAddress);
 	});
 
 	wsServer.on('request', (_request) => { 
@@ -355,12 +324,12 @@ function watchPlayList()  {
 	log(TEXT,'watchPlayList() ' + playListFile);
 
 	 FileSystem.watchFile(playListFile, (_curr, _prev) => {
-		log(TEXT,'watchPlayList() playlist changed');
+		log(TEXT,'watchPlayList() playlist changed *** we need to send this to the clients **');
 		getPlayList();
 		state.playList = playList;
 		state.songLog = [];
-		state.popupDialog = playList.length + ' songs in playlist';
-		MsgQueue(JSON.stringify({ playList: playList, songLog: songLog }));
+		state.popupDialog = "new playlist. " + playList.length + ' songs';
+		sendState(JSON.stringify({ state: state }));
 	});
 }; // function watchPlatList()  {
 

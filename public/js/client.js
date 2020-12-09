@@ -243,12 +243,6 @@ function sendMsg(_command) {
     request.open('GET', '/' + _command, false);
     request.send();
 
- /*   if (commands.indexOf(_command) > 0) {
-        log(TEXT, "sendMsg(" + _command + ") returning -> " + commands.indexOf(_command));
-    //    updateUI("sendMsg(" + _command + ")");
-        return;
-    }
-*/
     log(TEXT, "sendMsg(" + _command + ") command sent");
 
     if (request.response) {
@@ -259,19 +253,17 @@ function sendMsg(_command) {
         log(TEXT, "sendMsg(" + _command + ") resetting page title");
         $("#pagetitle").text("");
 
-        if (state.hasOwnProperty('songLog')) {
+        if (state.hasOwnProperty('songLog')) 
             songLog = state.songLog;
-        }
 
         if (state.hasOwnProperty('playList')) {
             setupPlayList();
             setupSearch();
         }
     } else { // if (request.response) {
-        log(TEXT, "sendMsg(" + _command + ") already updated UI. commands.indexOf(" + _command + ") -> " + commands.indexOf(_command));
-    //    updateUI("sendMsg(" + _command + ")");
-        return;
-    }
+            log(TEXT, "sendMsg(" + _command + ") already updated UI. commands.indexOf(" + _command + ") -> " + commands.indexOf(_command));
+            return;
+            }
 
     updateUI("sendMsg(" + _command + ")");
 } // function sendMsg(_command) {
@@ -280,28 +272,25 @@ function setupClock() {
     log(TEXT, "setupClock()");
 
     setInterval(function() {
-        if (state.duration >= state.progress)
+        if (state.duration >= state.progress) {
             $("#clock").text('-' + (state.duration - state.progress).toMMSS());
-                else {
+            } else {
                     log(TEXT, 'sendMsg(\"getstate\") duration -> ' + state.duration +' progress -> ' + state.progress);
-                    sendMsg("getstate");
-//                    updateUI("Clock()");
-                }
-
+                    
+                    if (!itsTheBB)
+                        sendMsg("getstate");
+                    }
+        
         if (!state.pause) {            
             var left = (++state.progress / state.duration) * 375;
     
-            if (state.progress > state.duration) {
-                left = 375;
-
-            //if (itsTheBB)
-              //  sendMsg("getstate");
-            } else
-                $("#progressbarhandle").css("left", left);
-
+        if (state.progress > state.duration) 
+            left = 375;
+                else
+                    $("#progressbarhandle").css("left", left);
         } // if (!state.pause) { 
     }, 1000); 
-}
+} // function setupClock() {
 
 function setupKBEvents() {
     log(TEXT, "setupKBEvents()");
@@ -569,25 +558,21 @@ function setupWebSocket() {
     itsTheBB = false;
 
     client.onmessage = function(_message) {
-//        var newState = JSON.parse(_message.data).state;
-        var state = JSON.parse(_message.data).state;
+        state = JSON.parse(_message.data).state;
 
         log(TEXT, "websocket onmessage CB() data recieved ->");
         log(!TEXT, state);
+        log(TEXT, "client.onmessage() message -> resetting page title"); 
 
-//        if (newState.hasOwnProperty('songLog'))
+        $("#pagetitle").text("");
 
-//            if (JSON.parse(newState.data.state).songLog != songLog.length) {
-                log(TEXT, "client.onmessage() message -> resetting page title"); 
-                $("#pagetitle").text("");
-                songLog = state.songLog;
-    
-    //            if (!itsTheBB) 
-      //              drawChart("setupWebSocket()");
-  //          } // if (JSON.parse(newState.data.state).songLog != songLog.length) {
+        songLog = state.songLog;
 
-    //    state = newState;
-        
+        if (state.hasOwnProperty('playList')) {
+            setupPlayList();
+            setupSearch();
+        }
+
         updateUI("websocket onmessage CB()");
     } // client.onmessage = function(_message) {
 } // function setupWebSocket() 
@@ -614,7 +599,6 @@ function updateUI(_logMsg) {
         $("#volume").slider("value", state.volume);
             log(TEXT,  "updateUI(" + _logMsg + ") delete state.volume");
             delete state.volume;
-           // return;
         }
 
     if (itsTheBB) {
