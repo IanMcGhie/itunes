@@ -1,10 +1,11 @@
 doctype html
 html
   head
-    script(src='/js/jquery-1.12.4.js')
+    script(src='/js/jquery-3.5.1.min.js')
     script(src='/js/jquery-ui.js')
     script(src='/js/autocomplete/autocomplete.js')
     script(src='/js/client.js') 
+    script(src='/js/chart.js') 
 
     style
         include ../public/css/jquery-ui.css
@@ -19,11 +20,11 @@ body
 <div id="songtitle"></div>
 <div id="winampspan">
     <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
-    <img id="ispaused" src="images/playing.png">
+    <img id="paused" src="images/paused.png">
     <span id="clock"></span>
     <span id="volume" class="slider"></span>
     <img id="shuffleenabled" src="images/shuffle.png">
-    <div id="progressbardiv"><img id="progressbarhandle" src="images/progressbar49x17.png"></div>
+    <img id="progressbarhandle" src="images/progressbar49x17.png">
     <map id="winampmap" name="winampmap">
         <area id="prev" shape="rect" coords="28,150,65,180">
         <area id="pause" shape="rect" coords="106,150,142,180">
@@ -32,14 +33,15 @@ body
     </map>
 </div>
 <div>
-    <input id="searchinput" type="text" placeholder="Mp3 Search"  />
-    <button id="playsong">Play</button>
-    <button id="queuesong">Queue</button>
+<input id="searchinput" type="text" placeholder="Mp3 Search">
+<button id="playsong">Play</button>
+<button id="queuesong">Queue</button>
 </div>
 <select id="playlist"></select>
+<div>z-prev&nbsp;&nbsp;&nbsp;c-pause&nbsp;&nbsp;&nbsp;b-next&nbsp;&nbsp;&nbsp;s-shuffle&nbsp;&nbsp;&nbsp;i-vol down&nbsp;&nbsp;&nbsp;o-vol up&nbsp;&nbsp;&nbsp;m-mute</div>
 <div class="chartcontainer">
     <!-- server should make this png -->
-    <!-- <canvas id="chart" oncontextmenu="return false;"></canvas> -->
+    <canvas id="chart" oncontextmenu="return false;"></canvas>
 </div>
 <a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a>
 <span id="connections"></span>
