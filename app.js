@@ -7,6 +7,7 @@
 const { execFile } 	= require('child_process');
 const FileSystem 	= require('fs');
 const Express 	   	= require('express');
+const NodeID3 		= require('node-id3')
 const Http 			= require('http');
 const opn 			= require('opn');
 const WSServer 		= require('websocket').server;
@@ -18,18 +19,18 @@ const TEXT 			= true;
 const WSPort		= 6502;
 const playListFile 	= '/home/ian/monday.pls';
 
-Number.prototype.toMMSS = function() {
-    let minutes = parseInt(this / 60);
-    let seconds = parseInt(this % 60);
+Number.prototype.toMMSS = function() {    
+    let minutes = parseInt(Math.abs(this) / 60);
+    let seconds = parseInt(Math.abs(this) % 60);
 
     if (minutes < 10) 
-        minutes = '0' + minutes;
+        minutes = "0" + minutes;
     
     if (seconds < 10)
-        seconds = '0' + seconds;
+        seconds = "0" + seconds;
 
-    return minutes + ':' + seconds;
-} // Number.prototype.toMMSS = function() {
+    return minutes + ":" + seconds;
+} // Integer.prototype.toMMSS = function() {
 
 let state = {
 	mute: false,
@@ -107,6 +108,8 @@ function log(_type, _msg) {
 function newSong(_index) {
 	log(TEXT, 'newSong(' + _index + ')');
 	
+
+
 	if (_index > playList.length - 1)  { // queued mp3 at end of playlist
 		log(TEXT,'This is a queued song');
 		execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
@@ -143,7 +146,7 @@ async function drawChart(_logMsg) {
 	chartData.length = barColors.length = playList.length;
     chartData.fill(0);
     barColors.fill("#0d0");
-    log(TEXT, "the length is -> " + chartData.length);
+    
     for (let i = 0; i < chartData.length;i++) {
         barColors[i] = "#0d0";
         chartData[i]++;
@@ -198,12 +201,12 @@ async function drawChart(_logMsg) {
 }
 
 async function processRequest(_request, _response) {
-	const arg1 		= _request.params.arg1;
-	const arg2 		= parseInt(_request.params.arg2);
+	const arg1 	= _request.params.arg1;
+	const arg2 	= parseInt(_request.params.arg2);
 
 	let dontSendTo 	= _request.socket.remoteAddress; 
 	
-	log(TEXT, dontSendTo + ' processRequest() params ->');
+	log(TEXT, dontSendTo + ' processRequest()');
 	log(!TEXT, _request.params);
 
 	switch (arg1) {
@@ -218,6 +221,12 @@ async function processRequest(_request, _response) {
 		break;
 
 		case "mute":
+		case 'mutedialog':
+			if (dontSendTo.includes(gateway)) {
+				log(TEXT, 'setVolume ignoring mute request from gateway');
+				return;
+			}
+
 			state.mute = !state.mute; 
 			execFile('amixer', ['-c', '1', '--', 'sset', 'Master', state.mute ? 'mute' : 'unmute']);
 		break;
@@ -228,34 +237,20 @@ async function processRequest(_request, _response) {
 			state.shuffle = !state.shuffle;
 		break;
 
-		case 'getstate':
 		case 'getstatewithplaylist':
-			if (arg1 == 'getstatewithplaylist') {
-				state.playList 	= playList;
-				state.songLog 	= songLog;
-			}
+			state.playList 	= playList;
+			state.songLog 	= songLog;
+		break;
 		
-			state = Object.assign(state, await getXmmsState());
-
-			_response.send(state);
-			_response.end();
-		return; // <======================== return statement here
-
 		case 'setvolume':
 			if (dontSendTo.includes(gateway)) {
-				log(TEXT, ' setVolume ignoring request from gateway');
+				log(TEXT, 'setVolume ignoring request from gateway value -> ' + arg2);
 				return;
 			}
 
-			if (arg2 == 'volup') 
-				state.volume++;
-					else if (arg2 == 'voldown')
-						state.volume--;
-							else {
-								state.volume = arg2;
-								execFile('amixer', ['-c', '1', '--', 'sset', 'Master', state.volume + '%']);
-								log(TEXT,'setVolume(' + arg2 + ') -> ' + state.volume + '%');
-							}
+			log(TEXT,'setting volume ' + arg2 + ' -> ' + state.volume + '%');
+			state.volume = arg2;
+			execFile('amixer', ['-c', '1', '--', 'sset', 'Master', state.volume + '%']);
 		break;
 
 		case 'queuesong': 	// * really hurt *
@@ -272,10 +267,17 @@ async function processRequest(_request, _response) {
 			dontSendTo 		= "BROADCAST";
 			state.songLog 	= songLog;
 			newSong(arg2 - 1);
+		/*	
+			NodeID3.read(mp3Path[arg2 - 1], function(_err, _tags) {
+				//	playList.push(_tags.title);
+				if (_tags != undefined)
+					log(!TEXT, _tags);
+			});
+			*/
 		break;
 
 		case 'seek':
-			let seekTo = parseInt(state.duration * (arg2 / 100));
+			let seekTo = (state.progress / state.duration) * arg2;
 			
 			execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 				state.progress = seekTo;
@@ -287,6 +289,7 @@ async function processRequest(_request, _response) {
 		}
 		
 	sendState(dontSendTo);
+//	_response.send(state);
 	_response.end();
 } // async function processRequest(_request, _response) {
 
@@ -306,7 +309,7 @@ async function sendState(_dontSendTo) {
             log(TEXT, 'sendState() sending state to -> ' + clients[i].remoteAddress);
             clients[i].send(JSON.stringify({ state: state }));
         }
-	} // function sendState(_dontSendTo) {
+} // function sendState(_dontSendTo) {
 
 function setupWebsocket() {
 	log(TEXT,'setupWebsocket()');
@@ -333,7 +336,7 @@ function setupWebsocket() {
 		log(TEXT, "xmms state retreived...sending to -> " + clients[clients.length - 1].remoteAddress);
 		log(!TEXT, state);
 
-		clients[clients.length - 1].send(JSON.stringify({state: state}));
+		clients[clients.length - 1].send(JSON.stringify({ state: state }));
 
 		delete state.playList;
 	});
@@ -363,16 +366,16 @@ File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
 function getPlayList() {
 	let file 	= FileSystem.readFileSync(playListFile);
 	let lines 	= file.toString().split('\n');
-	
-	delete state.playList;
+	let tags = {};
 
 	playList 	= [];
 	mp3Path 	= [];
 
 	lines.forEach ((_line) => {
 		if (_line.toLowerCase().includes('\.mp3')) {
-			playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
 			mp3Path.push(_line.split('//')[1]);
+
+			playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
 		}
 	}); // lines.forEach (_line => {
 

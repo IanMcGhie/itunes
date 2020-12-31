@@ -2,24 +2,25 @@
 // bb doesnt like the let, includes, const keyword, async functions, promises, ()=> syntax
 // ... i dont either
 // ooo...neat https://en.wikipedia.org/wiki/Trie
-let DEBUG      = true;
-let itsTheBB   = true;
-let showPlayed = true;
-let TEXT       = true;
-let newSelect  = false;
-let chart;
-let userAdjustingProgressBar = false;
-let serverUrl  = "winamp:6502";
-let playList   = [];
-let songLog    = [];
-let songLogLength = 0;
-let state      = {  volume: 40,
+var DEBUG      = true;
+var itsTheBB   = true;
+var showPlayed = true;
+var TEXT       = true;
+var newSelect  = false;
+var chart;
+var userAdjustingProgressBar = false;
+var serverUrl  = "winamp:6502";
+var playList   = [];
+var songLog    = [];
+var oldSongLogLength = 0;
+
+var state      = {  volume: 40,
                     duration: 1,
                     progress: 0 };
 
 Number.prototype.toMMSS = function() {    
-    let minutes = parseInt(Math.abs(this) / 60);
-    let seconds = parseInt(Math.abs(this) % 60);
+    var minutes = parseInt(Math.abs(this) / 60);
+    var seconds = parseInt(Math.abs(this) % 60);
 
     if (minutes < 10) 
         minutes = "0" + minutes;
@@ -30,25 +31,138 @@ Number.prototype.toMMSS = function() {
     return minutes + ":" + seconds;
 } // Integer.prototype.toMMSS = function() {
 
-$(document).ready(function() {
-    let itsFirefox = typeof InstallTrigger !== 'undefined';
-    let itsChrome  = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+var itsFirefox = typeof InstallTrigger !== 'undefined';
+var itsChrome  = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
 
-    document.body.style.color = "#0d0"; // set chart bar default color 
-      
-    setupKBEvents();
-    setupMouseEvents();
-    setupClock();
+if (itsFirefox || itsChrome)
+    setupWebSocket(); // this sets itsTheBB to false
+        else 
+            sendMsg("getstatewithplaylist");
 
-    if (itsFirefox || itsChrome)
-        setupWebSocket(); // this sets itsTheBB to false
-            else 
-                sendMsg("getstatewithplaylist");
 
-    setupTitleTicker();
-    setupVolumeControl();   
-    // window.onresize = drawChart;
-}); // $(document).ready(function() {
+setupClock();
+setupTitleTicker();
+setupKBEvents();
+// window.onresize = drawChart;
+
+function newPopup(_type) {
+    log(TEXT, "newPopup(" + _type + ")");
+
+    // create a new div element
+   // var currentDiv;
+
+    // and give it some content
+/*
+if (_type == "mute")
+    newDiv.setAttribute('top', '400px');
+        else if (_type == "queuesong") 
+            newDiv.setAttribute('top', '500px');
+                 else if (_type == "pause") 
+                    newDiv.setAttribute('top', '600px');
+*/
+/*
+if (_type == "mute")
+    if (document.getElementById("mute") != null) {
+        const currentDiv = document.getElementById("mute");
+        document.body.removeChild(currentDiv);            
+    }
+
+if (_type == "queuesong") {
+    document.body.insertBefore(newDiv, currentDiv);
+
+    setTimeout(function() {
+       const currentDiv = document.getElementById(_type);
+       
+       document.body.removeChild(currentDiv);
+    }, 4000);    
+}
+*/
+
+    if (_type == "dialog_paused") {
+       if (document.getElementById(_type) != undefined) {
+            var currentDiv = document.getElementById("winampspan");
+           currentDiv = document.getElementById(_type);
+           document.body.removeChild(currentDiv);
+        } else {
+                const newDiv = document.createElement("div");
+                const newContent = document.createTextNode("Paused");
+
+                newDiv.appendChild(newContent);
+                newDiv.setAttribute('id', _type);
+
+                var currentDiv = document.getElementById("winampspan");
+                document.body.insertBefore(newDiv, currentDiv);
+           }
+    }
+
+
+/*} else {
+            if (!document.getElementById("popupid_" + (popupID))) {
+                const currentDiv = document.getElementById("popupid_" + (popupID));
+  //              alert(currentDiv);
+                document.body.removeChild(currentDiv);            
+            }
+
+}*/
+
+}
+ /*
+if (document.getElementById("popupid_" + (popupID - 1)) == null) {
+    // create a new div element
+    const newDiv = document.createElement("div");
+
+    // and give it some content
+    const newContent = document.createTextNode(_msg);
+    // add the text node to the newly created div
+
+    newDiv.appendChild(newContent);
+    newDiv.setAttribute('id', 'popupid_' + popupID);
+    //newDiv.setAttribute('top', '400px');
+    newDiv.setAttribute('top', (400 + (popupID * 100)) +'px' );
+    
+    const currentDiv = document.getElementById("winampspan");
+    document.body.insertBefore(newDiv, currentDiv);
+    } else {
+//        if () {
+        
+    if (_delay > 0)  {
+        setTimeout(function() {
+           const currentDiv = document.getElementById("popup");
+            document.body.removeChild(currentDiv);
+        }, _delay);
+    } else {
+//            newDiv.setAttribute('top', (400 + (popupID * 100)) +'px' );
+  //      } else {
+           const newDiv = document.getElementById("popupid_" + (popupID - 1));
+            newDiv.setAttribute('top', (400 + (popupID * 100)) +'px' );
+            document.body.removeChild(newDiv);
+
+         }
+
+    }
+}
+*/
+
+
+/*
+
+    // add the newly created element and its content into the DOM
+  
+    if (_delay > 0)  {
+        setTimeout(function() {
+           const currentDiv = document.getElementById("popup");
+            document.body.removeChild(currentDiv);
+        }, _delay);
+    } else {
+            if (!document.getElementById("popup")) {
+                const currentDiv = document.getElementById("popup");
+  //              alert(currentDiv);
+                document.body.removeChild(currentDiv);            
+            }
+    }*/
+  
+
+//} // function newPopup(_msg, _delay) {
 
 function charsAllowed(_value) {
     return new RegExp(/^[a-zA-Z\s]+$/).test(_value);
@@ -57,21 +171,23 @@ function charsAllowed(_value) {
 function drawChart(_logMsg) {
     log(TEXT, "drawChart(" + _logMsg + ")");
 
-    let barColors  = [];
-    let chartData  = [];
-    let lastLetter = "";
-    let lastIndex  = -50;
-    let yMax       = 0;
-    let currentSongIndex = -1;
+    var barColors  = [];
+    var chartData  = [];
+    var lastLetter = "";
+    var lastIndex  = -50;
+    var yMax       = 0;
+    var currentSongIndex = -1;
 
-    let customTooltips = function(_ttModel) {
-        let chartToolTip = document.getElementById('charttooltip');
-        let innerHTML = "<table>";
-        let chartPopupIndex = -1;
+    var customTooltips = function(_ttModel) {
+        var chartToolTip = getAttribs('charttooltip');
+        var innerHTML = "<table id='tablerighthere>";
+        var chartPopupIndex = -1;
 
         // Hide if no tooltip
-        if (this._active.length == 0 || !songLog.includes(this._active[0]._index) && showPlayed) {
-            $("#charttooltip").remove();
+        if (showPlayed && this._active.length == 0) {
+        //    getAttribs("charttooltip").remove();
+             getAttribs("chartToolTip").removeChild(chartToolTip);
+//        getAttribs("charttooltip").display = "none";
             chartPopupIndex = -1;
             return;
         }
@@ -81,19 +197,21 @@ function drawChart(_logMsg) {
             chartToolTip = document.createElement('div');
             chartToolTip.id = 'charttooltip';
             chartToolTip.innerHTML = innerHTML;
-            this._chart.canvas.parentNode.appendChild(chartToolTip);
+//            this._chart.canvas.parentNode.appendChild(chartToolTip); // ???
+            document.canvas.parentNode.appendChild(chartToolTip); // ???
         }
 
         chartPopupIndex = this._active[0]._index;
 
-        $("#chart").unbind();
-        $("#chart").contextmenu(function() { // right click
-            $("#charttooltip").remove();
+      //  getAttribs("chart").unbind();
+
+        getAttribs("chart").onrightclick = function() { // right click
+            getAttribs("charttooltip").remove();
             showPlayed = !showPlayed;
             drawChart("contextmenu");
-        });
+        };
        
-        $("#chart").click(function() {
+        getAttribs("chart").click(function() {
             if (chartPopupIndex != -1)
                 sendMsg("playsong/" + chartPopupIndex);
         });
@@ -114,45 +232,45 @@ function drawChart(_logMsg) {
         chartToolTip.querySelector('table').innerHTML = innerHTML;
         chartToolTip.style.opacity = 1;
         chartToolTip.style.left    = (_ttModel.caretX / 1.4) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
-    };  // let customTooltips = function(_ttModel) {
+    };  // var customTooltips = function(_ttModel) {
 
-    $("#chartcontainer").css("display","inline-block");
-    
     currentSongIndex = songLog[songLog.length - 1];
-    chartData.length = barColors.length = playList.length;
+    chartData.length = playList.length;
+    barColors.length = playList.length;
+    
     chartData.fill(0);
     barColors.fill(document.body.style.color);
 
-    for (let i = 0; i < songLog.length;i++) {
+    for (var i = 0; i < playList.length;i++) {
         barColors[songLog[i]] = document.body.style.color;
         chartData[songLog[i]]++;
-
-        if (chartData[songLog[i]] > yMax)
-            yMax = chartData[songLog[i]] + 1;
     }
 
-    chartData[currentSongIndex] = yMax;
+    yMax = Math.max(chartData);
 
-    if (!showPlayed) { 
-        for (let i = 0; i < chartData.length;i++) {
+    for (var i = 0; i < playList.length;i++) {
+        if (showPlayed) {            
             if (chartData[i] > 0) {
-                barColors[i] = "#000";
-                chartData[i] = 0;
-            } else {
-                    barColors[i] = document.body.style.color;
+                barColors[i] = "#0d0";
+                chartData[i] = 1;
+            }
+        } else {
+                if (chartData[i] == 0) {
+                    barColors[i] = "#0d0";
                     chartData[i] = 1;
-                    }
-        
-        chartData[currentSongIndex] = 2;
-        }
-    }
+                }
+            } // } else {
+        } // for (var i = 0; i < playList.length;i++) {
 
+    chartData[currentSongIndex] = yMax + 1;
     barColors[currentSongIndex] = "#fd1"; // highlight currently playing
 
     if (chart)
         chart.destroy();
     
-    chart = new Chart($("#chart"), {
+    var chartDiv = getAttribs("chart"); 
+
+    chart = new Chart(chartDiv, {
         type: 'bar',
         data: {
             labels: chartData,
@@ -193,15 +311,11 @@ function drawChart(_logMsg) {
                 yAxes: [{ ticks: { callback: function(_value, _index, _values) { return; } } }]
             } // scales: { 
         } // options: {
-    }); //  chart = new Chart($("#chart"), {
+    }); //  chart = new Chart(getAttribs("chart"), {
 } // function drawChart() {
 
-function getSearchInputSongIndex() {
-    let index = playList.indexOf($("#searchinput").val());
-    
-    log(TEXT, "getSearchInputSongIndex() -> " + index);
-
-    return index;
+function getAttribs(_id) {
+    return document.getElementById(_id);
 }
 
 function log(_type, _msg) {
@@ -216,71 +330,50 @@ function log(_type, _msg) {
 function sendMsg(_command) {
     log(TEXT, "sendMsg(" + _command + ")");
  
-    let request  = new XMLHttpRequest();
+    var request  = new XMLHttpRequest();
 
-    request.open('GET', '/' + _command, false);
+    request.open('GET', '/' + _command, false); // false for synchronous request
     log(TEXT, "sendMsg(" + _command + ") command sent");
-    request.send();
+    request.send(null); // whats the null for?
 
-    if (request.response) {
-        log(TEXT, "sendMsg(" + _command + ") message received");
-
-        state = JSON.parse(request.response);
-
-        log(!TEXT, state);
-    } else if (_command.split("/")[0] == "queuesong") { // // if (request.response) { 
-                log(TEXT, "sendMsg(" + _command + ") already updated UI... returning");
-                alert("q dialog goes here...");
-                return;
-            }
-
-    // these are the commands that we dont wait for a reply from the server
-    // and just update the ui right away...
-    switch (_command) {
-        case 'shuffle':
-        case 'shuffleenabled':
-            state.shuffle = !state.shuffle;
-            $("#shuffleenabled").css("visibility", state.shuffle ? "visible" : "hidden");
-        break;
-
-        case 'mute':
-            state.mute = !state.mute;
-            $("#mutedialog").css("display", state.mute ? "inline-block" : "none");
-        break;
-
-        case 'pause':
-            state.pause = !state.pause;
-            $("#paused").attr("src", state.pause ? "/images/paused.png" : "/images/playing.png");
-        break;
-
-        case 'next':
-        case 'prev':
-        break;
-         
-        default:
-           updateUI("sendMsg(" + _command + ")");
+    if (_command.split("/")[0] == "queuesong") { // // if (request.response) { 
+        log(TEXT, "sendMsg(" + _command + ") already updated UI... returning");
+        alert("q dialog goes here...");
+        return;
     }
+/*
+    state = JSON.parse(request.responseText);
+
+    log(!TEXT, state);
+ */
+    updateUI("sendMsg(" + _command + ")");
 } // function sendMsg(_command) {
 
 function setupClock() {
     log(TEXT, "setupClock()");
 
+
     setInterval(function() {
         if (!state.pause && state.progress < state.duration) 
             state.progress++;
-        
-        $("#progressbarhandle").css("padding-left", (state.progress / state.duration) * 375);
-        $("#clock").text("-" + (state.progress - state.duration).toMMSS());
+ 
+      //  getAttribs('progressbarhandle').style.left = "111px";//(state.duration / state.progress) * -235;
+        getAttribs('sliderprogressbar').left = (state.duration / state.progress) * -235;
+        getAttribs('clock').innerHTML = "-" + (state.progress - state.duration).toMMSS();
     }, 1000); 
 } // function setupClock() {
 
 function setupKBEvents() {
     log(TEXT, "setupKBEvents()");
-    
-    $("body").keyup((_event) => {
-        log(TEXT, "body keyup -> " + _event.which);
+
+    document.addEventListener('keyup', (_event) => {
+        log(TEXT, "keyup -> " + _event.keyCode);
         
-        switch (_event.which) {
+        switch (_event.keyCode) {
+            case 13: // CR
+                sendMsg("playsong/" + playList.indexOf(getAttribs("searchinput").value));
+            break;
+
             case 90: // Z z
                 sendMsg("prev");
             break;
@@ -295,40 +388,67 @@ function setupKBEvents() {
 
             case 67: // c
                 sendMsg("pause");
+                newPopup("dialog_paused");
             break;
 
             case 83: // S s
                 sendMsg("shuffle");
             break;
-
+/*
+you cant do this
             case 81: // Q q
-                sendMsg("queuesong/" + getSearchInputSongIndex());
+                sendMsg("queuesong/" + playList.indexOf(getAttribs("searchinput").value));
             break;
-
+*/
             case 79: // O o
-                $("#volume").slider("value", parseInt($("#volume").slider("value") + 1));
+                state.volume++;
+                sendMsg("setvolume/" + state.volume);
+                setVolume(state.volume);
             break;
 
             case 73: // I i
-                $("#volume").slider("value", parseInt($("#volume").slider("value") - 1));
+                state.volume--;
+                sendMsg("setvolume/" + state.volume);
+                setVolume(state.volume);
             break;
 
             case 74: // J j
-                $("#searchinput").focus();
+                getAttribs('searchinput').focus();
             break;
         } // switch (_event.which) {
-    }); // $("body").keyup((_event) => {
+    }); // getAttribs("body").keyup(function(_event) {
+/*
+    document.querySelector("playlist").addEventListener('focus', (_event) => {
+alert("in here");
+});
+*/
+/*
+const listener = function(e) {
+  console.log('focused!'); // do anything here
+} 
 
-    $("#playlist").focusin(function() {
-        $("body").off("keyup");
-        $("#playlist").css("border", "1px solid #0d0");
+// Add event listener 
+document.getElementById("txttaskdateDeploy").addEventListener("focus", listener);
 
-        $("#playlist").keyup((_event) => {
+// When you want to remove the event listener 
+document.getElementById("txttaskdateDeploy").removeEventListener("focus", listener);
+
+
+*/
+setTimeout(function() {
+//log(TEXT, "setting focus event")
+//    getAttribs("playlist").focusin(function() {
+getAttribs("playlist").addEventListener('focus', (_event) => {    
+/*
+        getAttribs("body").off("keyup");
+        getAttribs("playlist").css("border", "1px solid #0d0");
+
+        getAttribs("playlist").keyup(function(_event) {
             log(TEXT, "key up -> " + _event.which);
 
             switch (_event.which) {
                 case 13:
-                    sendMsg("playsong/" + getSearchInputSongIndex());
+                    sendMsg("playsong/" + playList.indexOf(getAttribs("searchinput").value));
                 break;
                 
                 case 51: // 3
@@ -338,59 +458,111 @@ function setupKBEvents() {
                     }
                 break;
             }; // switch (_event.which) {
-        }); // $("#playlist").keyup((_event) => {
-    }); // $("#playlist").focusin(function() {
+        }); // getAttribs("#playlist").keyup(function(_event) {
+    }); // getAttribs("#playlist").focusin(function() {
+*/
 
-    $("#playlist").focusout(function() {
-        $("#playlist").off("keyup");
-        $("#playlist").css("border", "1px solid #888");
-        setupKBEvents();
+    //getAttribs("playlist").focusout(function() {
+    getAttribs("playlist").addEventListener('blur', (_event) => {
+//        getAttribs("playlist").off("keyup");
+  //      getAttribs("playlist").css("border", "1px solid #888");
+    //    setupKBEvents();
     });
+});
+}, 1000);
+
 } // function bodyKBEvents(_event) {
 
 function setupMouseEvents() {
     log(TEXT, "setupMouseEvents()");
 
-    // this will cause slidechange jquery cb to fire
-    $("#winampspan").on("wheel", (_event) => {
+//log(!TEXT, getAttribs("playlist"));
+/*
+    getAttribs("playlist").onclick = function () {
+     alert('whoa -> ' + getAttribs('playlist').selectedIndex ); 
+ };
+*/
+
+    
+    window.addEventListener("wheel", function(_event) {
+        console.info(_event.deltaY);
+
+        if (_event.deltaY > 0) {
+                state.volume--;
+     //           sendMsg("setvolume/" + state.volume);
+                setVolume(state.volume);
+            } else {
+                    state.volume++;
+          //          sendMsg("setvolume/" + state.volume);
+                    setVolume(state.volume);                
+                    }
+    });
+
+    getAttribs("playlist").ondblclick = function() {
+
+log(!TEXT, getAttribs("playlist"));
+
+        sendMsg((this).id + "/" + playList.indexOf(getAttribs("playlist").selectedIndex));
+        //  alert(playList.indexOf(valueOf(getAttribs("playlist").selectedIndex)));
+    };
+
+    getAttribs("prev").onclick = function() {
+        sendMsg("prev");
+    };
+  
+    getAttribs("pause").onclick = function() {
+        sendMsg("pause");
+    };
+  
+    getAttribs("next").onclick = function() {
+        sendMsg("next");
+    };
+  
+    getAttribs("shuffle").onclick = function() {
+        sendMsg("shuffle");
+    };
+  
+    getAttribs("shuffleenabled").onclick = function() {
+        sendMsg("shuffle");
+    };
+
+    getAttribs("shuffle").onclick = function() {
+        sendMsg("shuffle");
+    };
+
+    getAttribs("playlist").onchange = function() {
+        //getAttribs("searchinput").val(getAttribs("playlist").val());
+    };
+  
+  
+/*    // this will cause slidechange jquery cb to fire
+    getAttribs("#winampspan").on("wheel", function(_event) {
         if (_event.originalEvent.deltaY < 0)
-            $("#volume").slider("value",parseInt($("#volume").slider("value") + 1)); 
+            getAttribs("#volume").slider("value",parseInt(getAttribs("#volume").slider("value") + 1)); 
                 else
-                   $("#volume").slider("value",parseInt($("#volume").slider("value") - 1));
+                   getAttribs("#volume").slider("value",parseInt(getAttribs("#volume").slider("value") - 1));
     });
-
-    $("#winampspan").click(function() {
-// dont do this here....you hit pause...and you get TWO calls back...one for pause...and one for the winampspan
-//        if (itsTheBB)
-        //    sendMsg("getstate/withplaylist");
-    });
-
-     $("#playsong, #queuesong").click(function() {
-        sendMsg((this).id + "/" + getSearchInputSongIndex());
-     });
-
-    $("#shuffle, #shuffleenabled, #pause, #prev, #next, #pause, #mutedialog").click(function() {
-        sendMsg((this).id);
-    });
-
-    $("#progressbarhandle").draggable({
+*/
+/*
+    getAttribs("#progressbarhandle").draggable({
        containment: "parent",
        start: function() {
             userAdjustingProgressBar = true;
         },
         stop: function(_event, _ui) {
-            sendMsg("seek/" + parseInt((_event.target.offsetLeft / 375) * 100));
+            sendMsg("seek/" + (state.progress / state.duration) * 100);
+
             userAdjustingProgressBar = false;
         }  
     });
 
-    $("#playlist").change(function() {
-        $("#searchinput").val($("#playlist").val());
+    getAttribs("#playlist").change(function() {
+        getAttribs("#searchinput").val(getAttribs("#playlist").val());
     });
 
-    $("#playlist").dblclick(function() {
-        sendMsg("playsong/" + getSearchInputSongIndex());
-    });
+    getAttribs("#playlist").dblclick(function() {
+        sendMsg("playsong/" + playList.indexOf(getAttribs("searchinput").value));
+    });'*/
 } // function setupMouseEvents() {
 
 function setupPlayList() {
@@ -398,12 +570,12 @@ function setupPlayList() {
 
     playList = state.playList;
 
-    $("#playlist").attr("size", playList.length < 20 ? playList.length : 20);
-    $("#playlist").empty();
-
-    for (let i = 0; i < playList.length; i++) {
-        let select = document.getElementById("playlist");
-        let option = document.createElement("option");
+    if (playList.length < 20)
+        getAttribs("playlist").size = playList.length;
+    
+    for (var i = 0; i < playList.length; i++) {
+        var select = getAttribs("playlist");
+        var option = document.createElement("option");
                  
         option.setAttribute("id", i);
         option.text = playList[i];
@@ -417,34 +589,41 @@ function setupPlayList() {
 
 function setupSearch() {
     log(TEXT, "setupSearch()");
-
-    $("#searchinput").focusin(function() {
-        $("body").off("keyup");
-        $("#searchinput").css("border", "1px solid #0d0");
+      getAttribs("searchinput").focus(function() {
+        alert("focusin");
+      });
+/*
+    getAttribs("#searchinput").focusin(function() {
+        getAttribs("body").off("keyup");
+        getAttribs("#searchinput").css("border", "1px solid #0d0");
           
         if (!newSelect) 
-            $("#searchinput").val("");
+            getAttribs("#searchinput").val("");
                 else
                     newSelect = false;
         
-        $("#searchinput").keyup(function(_event) {      
+        getAttribs("#searchinput").keyup(function(_event) {      
             if (_event.which == 13) {
-                sendMsg("playsong/" + getSearchInputSongIndex());
-              $("#searchinput").blur();
+                sendMsg("playsong/" + playList.indexOf(getAttribs("searchinput").value));
+              getAttribs("#searchinput").blur();
                 newSelect = false;
             }
 
             if (_event.which == 27)
-                $("#searchinput").blur();
-        }); // $("#searchinput").keyup(function(_event) {      
-    }); // $("#searchinput").focusin(function() {
+                getAttribs("#searchinput").blur();
+        }); // getAttribs("#searchinput").keyup(function(_event) {      
+    }); // getAttribs("#searchinput").focusin(function() {
 
-    $("#searchinput").focusout(function() {
-        $("#searchinput").css("border", "1px solid #888");
-        $("#searchinput").off("keyup");
-        $("#searchinput").val($("#playlist").val());
+    getAttribs("#searchinput").focusout(function() {
+        getAttribs("#searchinput").css("border", "1px solid #888");
+        getAttribs("#searchinput").off("keyup");
+        getAttribs("#searchinput").val(getAttribs("#playlist").val());
         setupKBEvents();
-    }); // $("#searchinput").focusout(function() {
+    }); // getAttribs("#searchinput").focusout(function() {
+
+*/
+//    getAttribs("searchinput").outerHTML = getAttribs("playlist").innerHTML;
+
 
     autocomplete({  // preventSubmit: true,
         input: document.querySelector('#searchinput'),
@@ -453,11 +632,11 @@ function setupSearch() {
         emptymessage: "MP3 not found",
         onSelect: function(_item, _inputfield) { // log(LOG,"onselect ****");
             newSelect = true;
-            $("#searchinput").val(_item.label);
+            getAttribs("#searchinput").val(_item.label);
         },
         fetch: function(_match, _callback) {
-            let match   = _match.toLowerCase();
-            let items   = playList.map(function(_n) {
+            var match   = _match.toLowerCase();
+            var items   = playList.map(function(_n) {
                 return { label: _n, group: "Results" }
             });
             _callback(items.filter(function(_n) { // log(LOG,"onfetch ****")
@@ -467,12 +646,12 @@ function setupSearch() {
             }));
         },
         render: function(_item, _value) {  //  log(LOG,"onrender ****")
-            let itemElement = document.createElement("div");
+            var itemElement = document.createElement("div");
             itemElement.id  = "resultrow_";
 
             if (charsAllowed(_value)) {
-                let regex = new RegExp(_value, 'gi');
-                let inner = _item.label.replace(regex, function(_match) {
+                var regex = new RegExp(_value, 'gi');
+                var inner = _item.label.replace(regex, function(_match) {
                     return "<strong>" + _match + "</strong>";
                 });
                 itemElement.innerHTML = inner;
@@ -495,66 +674,55 @@ function setupTitleTicker() {
     log(TEXT, "setupTitleTicker()");
 
     setInterval(function() {
-        if (($("#pagetitle").text().length > 0))
-            $("#pagetitle").text($("#pagetitle").text().slice(1));
+        var pageTitleDiv = getAttribs('pagetitle');
+
+        if (pageTitleDiv.text.length > 0)
+            pageTitleDiv.innerHTML = pageTitleDiv.innerHTML.slice(1);
                 else
-                    $("#pagetitle").text(playList[songLog[songLog.length - 1]]);
+                    pageTitleDiv.innerHTML =  playList[songLog[songLog.length - 1]];
     }, 250);
 } // function setupTitleTicker() {
-
-function setupVolumeControl() {
-    $("#volume").slider({
-        create: function(_event, _ui) {
-            log(TEXT, 'slider created');
-        },
-        change: function(_event, _ui) {
-            log(TEXT, "slidechange cb fired state.volume -> " + state.volume);
-
-            // vol 0% -> 40 153 28  vol 100% -> 225 31 38
-            //           28  99 1c               e1 1f 26 
-            let r = toHex(_ui.value * 1.85 + 40);
-            let g = toHex(153 - _ui.value);
-            let b = toHex(_ui.value * 0.1 + 28);
-
-            $("#volume").css("background-color","#" + r + g + b);            
-
-            log(TEXT, "volumeControl CB() sending new value -> " +  _ui.value + " color -> #" + r + g + b);
-
-            if (state.hasOwnProperty('volume')) {
-                log(TEXT, "not sending volume back to server...removing state.volume");
-                delete state.volume;
-                return;
-            }
-
-            $.get("setvolume/" + _ui.value);
-        },
-        animate: false,
-        min: 1,
-        max: 100,
-        value: state.volume
-    });
-} // function setupVolumeControl() {
 
 function setupWebSocket() {
     log(TEXT, "setupWebSocket()");
     
-    let client = new WebSocket("ws://" + serverUrl, "winamp");
+    var client = new WebSocket("ws://" + serverUrl, "winamp");
     
-    itsTheBB = false;
+    itsTheBB = false; // this sets itsTheBB to false
 
     client.onmessage = function(_message) {
-        log(TEXT, "WS onmessage CB()recieved ->");
+        log(TEXT, "WS onmessage CB() recieved");
 
-        state = JSON.parse(_message.data).state;
+        if (_message.data != undefined)
+            state = JSON.parse(_message.data).state;
 
         log(!TEXT, state);
         
-        updateUI("WS onmessage CB()");
+        updateUI("WS onmessage CB() recieved");
     } // client.onmessage = function(_message) {
 } // function setupWebSocket() 
 
+function setVolume() {
+    log(TEXT, "setVolume()");
+
+   // getAttribs("volume")
+    /*
+
+
+            // vol 0% -> 40 153 28  vol 100% -> 225 31 38
+            //           28  99 1c               e1 1f 26 
+            var r = toHex(_ui.value * 1.85 + 40);
+            var g = toHex(153 - _ui.value);
+            var b = toHex(_ui.value * 0.1 + 28);
+
+            getAttribs("#volume").css("background-color","#" + r + g + b);            
+
+
+*/
+}
+
 function toHex(_n) {
-    let h = parseInt(_n).toString(16);
+    var h = parseInt(_n).toString(16);
     return h.length < 2 ? "0" + h : h;;
 }
 
@@ -564,50 +732,57 @@ function updateUI(_logMsg) {
     if (state.hasOwnProperty('songLog')) 
         songLog = state.songLog;
 
-
     if (state.hasOwnProperty('playList')) {
         setupPlayList();
         setupSearch();
     }
 
-    if (songLog.length != songLogLength) {
-        songLogLength = songLog.length;
-        $("#pagetitle").text("");
+setupMouseEvents();
+
+    if (songLog.length != oldSongLogLength) { // new song ...update chart
+        oldSongLogLength = songLog.length;
         drawChart("updateUI");
     }
 
-    let currentlyPlaying = playList[songLog[songLog.length - 1]];
+    if (state.pause)
+        getAttribs("paused").src = "images/paused.png";
+            else
+                getAttribs("paused").src = "images/playing.png";
+    
+    getAttribs("shuffleenabled").hidden     = !state.shuffle;
+    getAttribs("songtitle").innerHTML       = playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")";
+//    getAttribs("mutedialog").hidden         = !state.mute; 
+    getAttribs("playlist").selectedIndex    = songLog[songLog.length - 1];
+    getAttribs("searchinput").size          = 125;
+    getAttribs("searchinput").value         = playList[getAttribs("playlist").selectedIndex];
+    getAttribs("connections").innerHTML     = " (" + state.totalListeners + "/" + state.currentListeners + "/" + songLog.length + ")";
 
-    $("#shuffleenabled").css("visibility", state.shuffle ? "visible" : "hidden");
-    $("#mutedialog").css("display", state.mute ? "inline-block" : "none");
-    $("#paused").attr("src", state.pause ? "/images/paused.png" : "/images/playing.png");
-    $("#searchinput").css("width", parseInt($("#playlist").css("width")) - 150);
-    $("#songtitle").text(currentlyPlaying + " (" + state.duration.toMMSS() + ")");
-    $("#searchinput").val(currentlyPlaying); 
-    $("#playlist>option:eq(" + songLog[songLog.length - 1] + ")").prop("selected", true);
-    $("#connections").text(" (" + state.totalListeners + "/" + state.currentListeners + "/" + songLog.length + ")");
+//    getAttribs("#mutedialog").css("display", state.mute ? "inline-block" : "none");
+
+document.getElementById("shuffleenabled").left = "100px";
 
     if (itsTheBB) {
-        $("body").css("text-align","left");
-        $("#songtitle").css("width","45%");
-        $("#shuffleenabled").css("margin-left", "-190px");
-        $("#mutedialog").css("left","5%");
-        $("#mutedialog").css("top","35%");
-        $("#popupdialog").css("top","30%");
-        $("#popupdialog").css("left","0px");
-        $("#popupdialog").css("width","40%");
+        getAttribs("body").css("text-align","left");
+        getAttribs("songtitle").css("width","45%");
+        getAttribs("shuffleenabled").css("margin-left", "-190px");
+/*        getAttribs("mutedialog").css("left","5%");
+        getAttribs("mutedialog").css("top","35%");
+        getAttribs("popupdialog").css("top","30%");
+        getAttribs("popupdialog").css("left","0px");
+        getAttribs("popupdialog").css("width","40%");*/
     }
-  
-    if (state.hasOwnProperty('volume'))
-        $("#volume").slider("value", state.volume); // this will cause slidechange jquery cb to fire
 
-    if (state.hasOwnProperty('popupdialog')) {
+// fix this  
+//    if (state.hasOwnProperty('volume'))
+//        getAttribs("#volume").slider("value", state.volume); // this will cause slidechange jquery cb to fire
+
+    if (state.hasOwnProperty('popup')) {
         log(TEXT, "updateUI(" + _logMsg + ") removing popupdialog from state");
-
-        $("#popupdialog").css("display", "inline-block");
-        $("#popupdialog").text(state.popupdialog);
-        $("#popupdialog").delay(5000).hide(0);  
-        
-      //  delete state.popupdialog;
+/*
+        getAttribs("popup").css("display", "inline-block");
+        getAttribs("popup").text(state.popupdialog);
+        getAttribs("popup").delay(5000).hide(0);  
+  */      
+        delete state.popupdialog;
     } 
 } // function updateUI(_logMsg) {
