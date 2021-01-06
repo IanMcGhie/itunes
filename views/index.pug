@@ -10,37 +10,33 @@ doctype html
         include ../public/css/style.css
 
     <title id="pagetitle"></title>
-    <div id="songtitle"></div>
-   
+    <div id="winampdiv">
+        <div id="songtitle"></div>
         <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
+        <div id="clock">CLOCK</div>
         <img id="paused" src="images/playing.png">
-        <span id="clock"></span>
-        <span id="slidervolumespan">
-            <input type="range" min="1" max="100" value="25" id="slidervolumeknob">
-        </span>
-        <span id="progressbarspan">
-            <input type="range" min="1" max="100" value="0" id="sliderprogressspan">
-        </span>
         <img id="shuffleenabled" src="images/shuffle.png">
+        <input type="range" min="1" max="100" id="volume">
+        <input type="range" min="1" max="100" id="progress">
         <map id="winampmap" name="winampmap">
             <area id="prev" shape="rect" coords="28,150,65,180">
             <area id="pause" shape="rect" coords="106,150,142,180">
             <area id="next" shape="rect" coords="186,150,218,180">
             <area id="shuffle" shape="rect" coords="281,153,357,175">
         </map>
+        <div id="searchinputdiv">
+            <input id="searchinput" type="text" placeholder="Mp3 Search">
+            <button id="buttonplay">Play</button>
+            <button id="buttonqueue">Queue</button>
+        </div>
+        <select id="playlist" size="20"></select>
     </div>
-    
-    <input id="searchinput" type="text" placeholder="Mp3 Search">
-    <button id="playsong">Play</button>
-    <button id="queuesong">Queue</button>
-    </div>
-    <select id="playlist" size="20"></select>
-        <div>enter-play&nbsp;&nbsp;&nbsp;z-prev&nbsp;&nbsp;&nbsp;c-pause&nbsp;&nbsp;&nbsp;b-next&nbsp;&nbsp;&nbsp;s-shuffle&nbsp;&nbsp;&nbsp;i-vol down&nbsp;&nbsp;&nbsp;o-vol up&nbsp;&nbsp;&nbsp;m-mute&nbsp;&nbsp;&nbsp;j-jump</div>
+    <div>enter-play&nbsp;&nbsp;&nbsp;z-prev&nbsp;&nbsp;&nbsp;c-pause&nbsp;&nbsp;&nbsp;b-next&nbsp;&nbsp;&nbsp;s-shuffle&nbsp;&nbsp;&nbsp;i-vol down&nbsp;&nbsp;&nbsp;o-vol up&nbsp;&nbsp;&nbsp;m-mute&nbsp;&nbsp;&nbsp;j-jump</div>
     <div class="chartcontainer">
         <!-- server should make this png -->
         <canvas id="chart" oncontextmenu="return false;"></canvas>
     </div>
     <a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a>
-    <span id="connections"></span>
+    <div id="connections"></div>
     </body>
 </html>
