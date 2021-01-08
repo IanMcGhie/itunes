@@ -9,7 +9,6 @@ const FileSystem 	= require('fs');
 const Express 	   	= require('express');
 const NodeID3 		= require('node-id3')
 const Http 			= require('http');
-const opn 			= require('opn');
 const WSServer 		= require('websocket').server;
 const { gateway } 	= require('default-gateway');
 const Path 			= require('path');
@@ -44,6 +43,7 @@ let songLog  = [];
 let playList = [];
 let clients  = [];
 
+setVolume(state.volume);
 getPlayList();
 watchPlayList();
 setupExpress();
@@ -53,7 +53,7 @@ setupWebsocket();
 // xmms will send /newsong/# http 
 // request & setup the initial state
 execFile('xmms', ['-Son','-pf'], (_err, _stdio, _stderr) => {
-log(TEXT, _stderr);
+	log(TEXT, _stderr);
 });
 
 function connectXmmsToDarkice() {
@@ -77,7 +77,32 @@ function connectXmmsToDarkice() {
     }); // execFile('jack_lsp',(_err,_stdio,_stderr) => {
 } // function connectXmmsToDarkice() {
 
- function getXmmsState() {
+ /* xmms monday.pls file looks like this
+[playList]
+NumberOfEntries=5297
+File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
+File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
+File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
+*/
+function getPlayList() {
+	let file 	= FileSystem.readFileSync(playListFile);
+	let lines 	= file.toString().split('\n');
+	let tags = {};
+
+	playList 	= [];
+	mp3Path 	= [];
+
+	lines.forEach((_line) => {
+		if (_line.toLowerCase().includes('\.mp3')) {
+			mp3Path.push(_line.split('//')[1]);
+			playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
+		}
+	}); // lines.forEach (_line => {
+
+	log(TEXT,'getPlayList() ' + playList.length + ' songs in playlist');
+} // function getPlayList() {
+
+function getXmmsState() {
 	log(TEXT, "getXmmsState()");
 
 	return new Promise((_resolve) => { 
@@ -109,26 +134,33 @@ function log(_type, _msg) {
 }
 
 function newSong(_index) {
-	log(TEXT, 'newSong(' + _index + ')');
-	
+	log(TEXT, 'newSong(' + _index + ') ' + playList[_index]);
+
+	delete state.id3Artist;
+	delete state.id3Title;
+
+	NodeID3.read(mp3Path[_index - 1], function(_err, _tags) {
+		if (_tags.hasOwnProperty('artist') && _tags.hasOwnProperty('title')) {
+				log(TEXT, "Found id3 tag  artist -> " + _tags.artist + " song title -> " + _tags.title);
+
+				state.id3Artist = _tags.artist;
+				state.id3Title 	= _tags.title;
+			} 
+	}); // NodeID3.read(mp3Path[_index - 1], function(_err, _tags) {
+
 	if (_index > playList.length - 1)  { // queued mp3 at end of playlist
-		log(TEXT,'This is a queued song');
 		execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
 			for (let i = 0; i < playList.length; i++) 
 				if (mp3Path[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
 	
 			log(TEXT, 'queued song path -> ' + mp3Path[i]);
 			songLog.push(i);
-
 			execFile('qxmms',['jump', parseInt(i) + 1]);
 			}// if (mp3Path[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
 		});
 	} else {
-			log(TEXT, 'newSong(' + _index + ') ' + playList[_index]);
-
 			songLog.push(_index);
-			log(!TEXT, songLog);
-			} // } else {
+			} 
 
 	connectXmmsToDarkice();
 }
@@ -140,23 +172,12 @@ async function drawChart(_logMsg) {
     let chartData  = [];
     let lastLetter = "";
     let lastIndex  = -50;
-    let yMax       = 0;
-    let currentSongIndex = -1;
 	
-	currentSongIndex = songLog[songLog.length - 1];
 	chartData.length = barColors.length = playList.length;
     chartData.fill(0);
     barColors.fill("#0d0");
-    
-    for (let i = 0; i < chartData.length;i++) {
-        barColors[i] = "#0d0";
-        chartData[i]++;
-    }
-
-    chartData[currentSongIndex] = yMax;
 
 	const cjs = new Chart(1000, 100); // 1000 x 1000 is default
-
 	const barConfig = {
         type: 'bar',
         data: {
@@ -201,20 +222,20 @@ async function drawChart(_logMsg) {
   	}).catch(console.error)
 }
 
-async function processRequest(_request, _response) {
+function processRequest(_request, _response) {
+	log(TEXT, _request.socket.remoteAddress + ' processRequest()');
+
 	const arg1 	= _request.params.arg1;
 	const arg2 	= parseInt(_request.params.arg2);
 
 	let dontSendTo 	= _request.socket.remoteAddress; 
 	
-	log(TEXT, dontSendTo + ' processRequest()');
-	log(!TEXT, _request.params);
-
 	switch (arg1) {
 		case 'prev':
 		case 'next':
 			xmmsCmd(arg1);
-		break;
+			_response.end();
+		return;
 
 		case 'pause':
 			xmmsCmd(arg1);
@@ -239,18 +260,16 @@ async function processRequest(_request, _response) {
 
 		case 'getstatewithplaylist':
 			state.playList 	= playList;
-			state.songLog 	= songLog;
+		//	state.songLog 	= songLog;
 		break;
 		
 		case 'setvolume':
 			if (dontSendTo.includes(gateway)) {
-				log(TEXT, 'ignoring request from gateway value -> ' + arg2);
+				log(TEXT, 'not setting volume -> ' + arg2);
 				return;
 			}
 
-			log(TEXT,'setting volume ' + arg2 + ' -> ' + state.volume + '%');
-			state.volume = arg2;
-			execFile('amixer', ['-c', '0', '--', 'sset', 'Master', state.volume + '%']);
+			setVolume(arg2);
 		break;
 
 		case 'queuesong': 	// * really hurt *
@@ -267,13 +286,6 @@ async function processRequest(_request, _response) {
 			dontSendTo 		= "BROADCAST";
 			state.songLog 	= songLog;
 			newSong(arg2 - 1);
-
-			NodeID3.read(mp3Path[arg2 - 1], function(_err, _tags) {
-				//	playList.push(_tags.title);
-				if (_tags != undefined)
-					log(TEXT, "ID3 -> " + _tags.artist + " - " + _tags.title);
-			});
-
 		break;
 
 		case 'seek':
@@ -290,7 +302,7 @@ async function processRequest(_request, _response) {
 		
 	sendState(dontSendTo);
 	_response.end();
-} // async function processRequest(_request, _response) {
+} // function processRequest(_request, _response) {
 
 async function sendState(_dontSendTo) {
     if (clients.length == 0) {
@@ -310,88 +322,17 @@ async function sendState(_dontSendTo) {
         }
 } // function sendState(_dontSendTo) {
 
-function setupWebsocket() {
-	log(TEXT,'setupWebsocket()');
-
-	const wsHttp = Http.createServer((_request, _response) => {
-		_response.writeHead(404);
-		_response.end();
-	}).listen(WSPort);
-
-	const wsServer = new WSServer({
-		url: 'ws://localhost:' + WSPort,
-		httpServer: wsHttp,
-	});
-
-	log(TEXT, "wsServer HTTP server created");
-
-	wsServer.on('connect',async (_connection) => {
-		log(TEXT, _connection.socket.remoteAddress + " wsServer new connection. asink connections -> " + (clients.length + 1));
-		
-		state = Object.assign({}, await getXmmsState(), { playList: playList}, {songLog: songLog});//.then((_state) => { 
- 		clients.push(_connection);
-		
-		log(TEXT, "xmms state retreived...sending to -> " + clients[clients.length - 1].remoteAddress);
-		log(!TEXT, state);
-		
-		clients[clients.length - 1].send(JSON.stringify({ state: state }));
-
-		log(TEXT, "removing playlist from state");
-		delete state.playList;
-	});
-
-	wsServer.on('request', (_request) => { 
-		log(TEXT,_request.socket.remoteAddress + ' wsServer GET ' + _request.resource);
-
-		_request.accept('winamp', _request.origin);
-	});
-
-    wsServer.on('close', (_connection) => {
-        clients = clients.filter((_element, _index, _array) => {
-            return _element.connected;
-		});
-
-	log(TEXT, _connection.remoteAddress + " wsServer disconnected.  clients -> " + clients.length);
-    }); //  connection.on('close', (_connection) => {
-} // function setupWebsocket() {
-
- /* xmms monday.pls file looks like this
-[playList]
-NumberOfEntries=5297
-File1=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/01 - Jailbreak.mp3
-File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On Me.mp3
-File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
-*/
-function getPlayList() {
-	let file 	= FileSystem.readFileSync(playListFile);
-	let lines 	= file.toString().split('\n');
-	let tags = {};
-
-	playList 	= [];
-	mp3Path 	= [];
-
-	lines.forEach ((_line) => {
-		if (_line.toLowerCase().includes('\.mp3')) {
-			mp3Path.push(_line.split('//')[1]);
-			playList.push(_line.split(/\/[a-z]\//i)[1].slice(0,-4));
-		}
-	}); // lines.forEach (_line => {
-
-	log(TEXT,'getPlayList() ' + playList.length + ' songs in playlist');
-} // function getPlayList() {
-
 function setupExpress() {
 	log(TEXT,'setupExpress()');
 
 	App.engine('Pug', require('pug').__express);
 	App.set('view engine', 'pug');
-
 	App.use(Express.json());
 	App.use(Express.urlencoded({ extended: false }));
 	App.use(Express.static(Path.join(__dirname, 'public')));
 
 	App.get('*', (_request, _response, _next) => {
-		log(TEXT,_request.socket.remoteAddress + ' GET ' + _request.url);
+		log(TEXT,_request.socket.remoteAddress + ' HTTP GET ' + _request.url);
 		_next();
 	});
 
@@ -405,6 +346,52 @@ function setupExpress() {
 	}); 
 } // function setupExpress() {
 
+function setupWebsocket() {
+	log(TEXT,'setupWebsocket()');
+
+	const wsHttp = Http.createServer((_request, _response) => {
+		_response.writeHead(404);
+		_response.end();
+	}).listen(WSPort);
+
+	const wsServer = new WSServer({
+		url: 'ws://localhost:' + WSPort,
+		httpServer: wsHttp,
+	});
+
+	wsServer.on('connect',async (_connection) => {
+		state = Object.assign({}, await getXmmsState(), { playList: playList}, {songLog: songLog});//.then((_state) => { 
+ 		clients.push(_connection);
+
+		log(TEXT, _connection.socket.remoteAddress + " wsServer new connection. total connections -> " + clients.length);
+		log(!TEXT, state);
+	
+		clients[clients.length - 1].send(JSON.stringify({ state: state }));
+		delete state.playList;
+	});
+
+	wsServer.on('request', (_request) => { 
+		log(TEXT, _request.socket.remoteAddress + ' wsServer GET ' + _request.resource);
+		_request.accept('winamp', _request.origin);
+	});
+
+    wsServer.on('close', (_connection) => {
+        clients = clients.filter((_element, _index, _array) => {
+            return _element.connected;
+		});
+
+	log(TEXT, _connection.remoteAddress + " wsServer disconnected.  clients -> " + clients.length);
+    }); //  connection.on('close', (_connection) => {
+} // function setupWebsocket() {
+
+function setVolume(_volume) {
+		if ((_volume >= 0) && (_volume <= 100)) {
+			log(TEXT,'setting volume ' + _volume);
+			state.volume = _volume;
+			execFile('amixer', ['-c', '0', '--', 'sset', 'Master', state.volume]);
+	}	
+}
+	
 function watchPlayList()  {
 	log(TEXT,'watchPlayList() ' + playListFile);
 
@@ -425,33 +412,25 @@ function watchPlayList()  {
 }; // function watchPlatList()  {
 
 function xmmsCmd(_command) {
-	var args = [];
-
 	log(TEXT, "xmmsCmd(" + _command + ")");
 
 	switch (_command) {
 		case 'prev':
-			args.push('-r');
+		    execFile('xmms', ['-r']);
 		break;
 		
 		case 'next':
-			args.push('-f');
+		    execFile('xmms', ['-f']);
 		break;
 		
 		case 'pause':
-			args.push('-t');
+		    execFile('xmms', ['-t']);
 		break;
 		
 		case 'shuffle':
-		case 'shuffleenabled':
-			args.push('-S');
+		    execFile('xmms', ['-S']);
 		break;
-
-		default:
-			log(TEXT, "xmmsCmd(" + _command + ") -> command not found");
 	}
-
-    execFile('xmms', args);
 } // function xmmsCmd(_command) {
 
 module.exports = App;
