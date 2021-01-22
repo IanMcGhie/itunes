@@ -1,22 +1,20 @@
 "use strict";
 
 // bb doesnt like the let, includes, const keyword, async functions, promises, ()=> syntax
-// ... i dont either
 // ooo...neat https://en.wikipedia.org/wiki/Trie
 var DEBUG      = true;
 var itsTheBB   = true;
-var showPlayed = true;
 var TEXT       = true;
 var newSelect  = false;
-var chart;
-var userAdjustingProgressBar = false;
+var userIsAdjustingTheProgressBar = false;
 var serverUrl  = "winamp:6502";
 var playList   = [];
 var songLog    = [];
 var oldSongLogLength = 0;
-var state      = {  volume: 40,
-                    duration: 1,
-                    progress: 0 };
+var state      = { duration: 1,
+progress: 20
+//pause: false 
+};
 
 Number.prototype.toMMSS = function() {    
     var minutes = parseInt(Math.abs(this) / 60);
@@ -36,8 +34,10 @@ Number.prototype.toHex = function () {
     return h.length < 2 ? "0" + h : h;;
 }
 
-window.onload = function() {
-    log(TEXT, "window.onload event... document ready");
+window.onresize = drawChart;
+
+window.onload = function() { 
+    log(TEXT, "window.onload event");
 
     const itsFirefox = typeof InstallTrigger !== 'undefined';
     const itsChrome  = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
@@ -50,10 +50,8 @@ window.onload = function() {
     if (itsFirefox || itsChrome)
         setupWebSocket(); // this sets itsTheBB to false
             else 
-                sendMsg("getstatewithplaylist"); // this does not set itsTheBB to false
+                sendMsg("getstatewithplaylist"); 
 };
-
-// window.onresize = drawChart;
 
 function newPopup(_type) {
     log(TEXT, "newPopup(" + _type + ")");
@@ -156,15 +154,17 @@ function charsAllowed(_value) {
 function drawChart(_logMsg) {
     log(TEXT, "drawChart(" + _logMsg + ")");
 
+    var chart;
     var barColors  = [];
     var chartData  = [];
     var lastLetter = "";
     var lastIndex  = -50;
+    var showPlayed = true;
 
     chartData.length = playList.length;
     chartData.fill(0);
 
-    for (var i = 0; i < playList.length;i++) {
+    for (var i = 0; i < playList.length - 1;i++) {
         chartData[songLog[i]]++;
 
         if (showPlayed && (chartData[i] > 0)) 
@@ -172,34 +172,37 @@ function drawChart(_logMsg) {
                 else if (chartData[i] == 0) 
                     barColors[i] = "#0d0";
     }
-
+    
+    // highlight currently playing
     chartData[songLog[songLog.length - 1]] = Math.max(...chartData) + 1;
-    barColors[songLog[songLog.length - 1]] = "#fd1"; // highlight currently playing
+    barColors[songLog[songLog.length - 1]] = "#fd1"; 
 
     if (chart)
         chart.destroy();   
     
     var customTooltips = function(_ttModel) {
         var chartToolTip    = getAttribs('charttooltip');
-        var chartPopupIndex = this._active[0]._index;
+        var chartPopupIndex = -1;
         
         if (!chartToolTip) {
-            chartToolTip = document.createElement('div');
-            chartToolTip.id = 'charttooltip';
+            chartToolTip                = document.createElement('div');
+            chartPopupIndex             = this._active[0]._index;
+            chartToolTip.id             = 'charttooltip';
             chartToolTip.innerHTML      = playList[chartPopupIndex] + '<br><br>Right click for songs ' + (showPlayed ? "not" : "") + ' played.';
-            chartToolTip.style.opacity  = 1;
             chartToolTip.style.left     = (_ttModel.caretX / 1.4) + 'px';// window.width / 2;// (_ttModel.caretX) + 'px';
+            chartToolTip.style.opacity  = 1;
             getAttribs("chartcontainer").appendChild(chartToolTip); 
         }
 
         // Hide if no tooltip
         if (songLog.includes(this._active[0]._index) && showPlayed)
-            return;
-        
+            return;        
+
         if (this._active.length == 0) {
             getAttribs("chartcontainer").removeChild(chartToolTip);
             return;
         }
+
 /*
         getAttribs("chart").rightclick(function() { // right click
             getAttribs("charttooltip").remove();
@@ -212,15 +215,13 @@ function drawChart(_logMsg) {
                 sendMsg("playsong/" + chartPopupIndex);
         });
 
+        chartToolTip.style.color = "#0d0";
+        chartToolTip.style.border = "1px solid #0d0";
+
         if (chartPopupIndex == songLog[songLog.length - 1]) { 
             chartToolTip.style.color = "#fd1"; // highlight currently playing song
             chartToolTip.style.border = "1px solid #fd1";
-           // innerHTML = playList[chartPopupIndex];
-            } else {
-                    chartToolTip.style.color = "#0d0";
-                    chartToolTip.style.border = "1px solid #0d0";
-               //     innerHTML = ;
-                    }    
+            }
     };  // var customTooltips = function(_ttModel) {
 
     chart = new Chart(getAttribs("chart"), {
@@ -272,12 +273,11 @@ function getAttribs(_id) {
 }
 
 function log(_type, _msg) {
-    if (DEBUG) {
+    if (DEBUG) 
         if (_type == TEXT)
             console.log(Date().split('GMT')[0] + _msg);
                 else
                     console.log(_msg);
-    }
 }
 
 function processMessage(_command) {
@@ -305,25 +305,24 @@ function processMessage(_command) {
 
     if (_command == 'voldown')
         state.volume--;
+} // function processMessage(_command) {
 
-    updateUI("processMessage(" + _command + ")");
-}
 function sendMsg(_command) {
     log(TEXT, "sendMsg(" + _command + ")");
  
     var request  = new XMLHttpRequest();
 
-    request.open('GET', '/' + _command, true); // false for synchronous request
+    request.open('GET', '/' + _command, true); // true for asynchronous request
     request.send(null);  
     processMessage(_command);
+    updateUI("sendMsg(" + _command + ")");
 } // function sendMsg(_command) {
-
 
 function setupClock() {
     log(TEXT, "setupClock()");
 
     setInterval(function() {
-        if (!state.pause && state.progress < state.duration) 
+        if (state && !state.pause && state.progress < state.duration) 
             state.progress++;
  
         getAttribs('clock').innerHTML = "-" + (state.progress - state.duration).toMMSS();
@@ -434,12 +433,12 @@ getAttribs("playlist").addEventListener('focus', (_event) => {
 function setupMouseEvents() {
     log(TEXT, "setupMouseEvents()");
 
-    var clickEvents = ['prev','pause','next','shuffle'];
+    var clickEvents = ['prev', 'pause', 'next', 'shuffle'];
 
     clickEvents.forEach(function(_event) {
         getAttribs(_event).addEventListener('click', function() {
            sendMsg(_event);
-        });      
+        });
     });
     
     getAttribs('winampdiv').addEventListener("wheel", function(_event) {
@@ -463,12 +462,12 @@ function setupMouseEvents() {
     getAttribs("progress").draggable({
        containment: "parent",
        start: function() {
-            userAdjustingProgressBar = true;
+            userIsAdjustingTheProgressBar = true;
         },
         stop: function(_event, _ui) {
             sendMsg("seek/" + (state.progress / state.duration) * 100);
 
-            userAdjustingProgressBar = false;
+            userIsAdjustingTheProgressBar = false;
         }  
     });
     */
@@ -491,10 +490,10 @@ function setupPlayList() {
         select.add(option);
     } 
 
-    log(TEXT, "setupPlaylist() " + playList.length + " songs in playList. removing playList from state");
+    log(TEXT, "setupPlayList() " + playList.length + " songs in playList. removing playList from state");
 
     delete state.playList;    
-} // function setupPlaylist() {
+} // function setupPlayList() {
 
 function setupSearch() {
     log(TEXT, "setupSearch()");
@@ -592,10 +591,11 @@ function setupWebSocket() {
     itsTheBB = false; 
 
     client.onmessage = function(_message) {
-        log(TEXT, "WS received message from server");
-        state = JSON.parse(_message.data).state;
+        log(TEXT, "WS message from server");
+        state = _message.data.state;
         log(!TEXT, state);
-        processMessage("WS received message from server");
+        processMessage("WS message from server");
+        updateUI("WS message from server");
     } // client.onmessage = function(_message) {
 } // function setupWebSocket() 
 
@@ -603,11 +603,16 @@ function updateUI(_logMsg) {
     log(TEXT, "updateUI(" + _logMsg + ")");
 
     var songTitle = playList[songLog[songLog.length - 1]];
+    // vol 0% -> 40 153 28  vol 100% -> 225 31 38
+    //           28  99 1c               e1 1f 26 
+    var r = (state.volume * 1.85 + 40).toHex();
+    var g = (153 - state.volume).toHex();
+    var b = (state.volume * 0.1 + 28).toHex();
 
     if (songLog.length != oldSongLogLength && !itsTheBB) {
         oldSongLogLength = songLog.length;
         getAttribs("pagetitle").innerHTML = "";
-        drawChart("processMessage()");
+        drawChart("updateUI(" + _logMsg + ")");
     }
 
     if (state.hasOwnProperty('id3Artist')) 
@@ -631,22 +636,14 @@ function updateUI(_logMsg) {
         getAttribs("mutedialog").css("top","35%");
         getAttribs("popupdialog").css("top","30%");
         getAttribs("popupdialog").css("left","0px");
-        getAttribs("popupdialog").css("width","40%");*/
+        getAttribs("popupdialog").css("width","40%"); */
     }
 
-    // vol 0% -> 40 153 28  vol 100% -> 225 31 38
-    //           28  99 1c               e1 1f 26 
-    var r = (state.volume * 1.85 + 40).toHex();
-    var g = (153 - state.volume).toHex();
-    var b = (state.volume * 0.1 + 28).toHex();
-
-    log(TEXT, "updateUI() state.volume -> " + state.volume + " (#" + r + g + b + ")");
-
-    getAttribs("volume").style.backgroundColor = "#" + r + g + b;
-    getAttribs('volume').value = state.volume;
-    getAttribs("songtitle").innerHTML       = songTitle + " (" + state.duration.toMMSS() + ")";
-    getAttribs("playlist").selectedIndex    = songLog[songLog.length - 1];
+    getAttribs("songtitle").innerHTML           = songTitle + " (" + state.duration.toMMSS() + ")";
+    getAttribs('volume').value                  = state.volume;
+    getAttribs("volume").style.backgroundColor  = "#" + r + g + b;
+    getAttribs("playlist").selectedIndex        = songLog[songLog.length - 1];
    // getAttribs("searchinput").size          = 124; // ???
-    getAttribs("searchinput").value         = playList[getAttribs("playlist").selectedIndex];
-    getAttribs("connections").innerHTML     = "Played-" + songLog.length + "&nbsp;&nbsp;Current-" + state.currentListeners + "&nbsp;&nbsp;Total-" + state.totalListeners;
+    getAttribs("searchinput").value             = playList[getAttribs("playlist").selectedIndex];
+    getAttribs("connections").innerHTML         = "Played-" + songLog.length + "&nbsp;&nbsp;Current-" + state.currentListeners + "&nbsp;&nbsp;Total-" + state.totalListeners;
 } // function updateUI(_logMsg) {
