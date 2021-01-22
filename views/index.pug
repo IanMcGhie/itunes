@@ -1,42 +1,44 @@
 doctype html
-<html>
-    head
-        script(src='/js/autocomplete/autocomplete.js')
-        script(src='/js/client.js') 
-        script(src='/js/chart.js')
-        alert('hi')
-<body>
+html
+  head
+    script(src='/javascripts/jquery-1.12.4.js')
+    script(src='/javascripts/jquery-ui.js')
+    script(src='/javascripts/chart.js')
+    script(src='/javascripts/autocomplete/autocomplete.js')
+    script(src='/javascripts/client.js') 
+
     style
-        include ../public/css/autocomplete.css
-        include ../public/css/style.css
-    <title id="pagetitle"></title>
-    <div id="winampdiv">
-        <div id="songtitle"></div>
-        <div id="clock"></div>
-        <input type="range" id="volume">
-        <input type="range" id="progress">
-        <img id="paused" src="images/playing.png">
-        <img id="shuffleenabled" src="images/shuffle.png">
-        <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
-        <map id="winampmap" name="winampmap">
-            <area id="prev" shape="rect" coords="28,150,65,180">
-            <area id="pause" shape="rect" coords="106,150,142,180">
-            <area id="next" shape="rect" coords="186,150,218,180">
-            <area id="shuffle" shape="rect" coords="281,153,357,175">
-        </map>
-        <div id="searchinputdiv">
-            <input id="searchinput" type="text" placeholder="Mp3 Search">
-            <button id="buttonplay">Play</button>
-            <button id="buttonqueue">Queue</button>
-        </div>
-    </div>
-    <select id="playlist" size="20"></select>
-    <div>enter-play&nbsp;&nbsp;&nbsp;z-prev&nbsp;&nbsp;&nbsp;c-pause&nbsp;&nbsp;&nbsp;b-next&nbsp;&nbsp;&nbsp;s-shuffle&nbsp;&nbsp;&nbsp;i-vol down&nbsp;&nbsp;&nbsp;o-vol up&nbsp;&nbsp;&nbsp;m-mute&nbsp;&nbsp;&nbsp;j-jump</div>
-    <div id="chartcontainer">
-        <!-- server should make this png -->
-        <canvas id="chart" oncontextmenu="return false;"></canvas>
-    </div>
-    <a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a>
-    <div id="connections"></div>
-    </body>
-</html>
+        include ../public/stylesheets/jquery-ui.css
+        include ../public/stylesheets/autocomplete.css
+        include ../public/stylesheets/style.css
+
+    <meta charset="utf-8">
+body
+<title id="pagetitle"></title>
+<div id="setvolume/mute">Press M to unmute</div>
+<div id="popupdialog"></div>
+<div id="songtitle"></div>
+<div id="winampspan">
+    <img id="winamp" src="images/winamp470x200.png" usemap="#winampmap">
+    <img id="ispaused" src="images/playing.png">
+    <span id="clock"></span>
+    <span id="volume" class="slider"></span>
+    <img id="shuffleenabled" src="images/shuffle.png">
+    <div id="progressbardiv"><img id="progressbarhandle" src="images/progressbar49x17.png"></div>
+    <map id="winampmap" name="winampmap">
+        <area id="prev" shape="rect" coords="28,150,65,180">
+        <area id="pause" shape="rect" coords="106,150,142,180">
+        <area id="next" shape="rect" coords="186,150,218,180">
+        <area id="shuffle" shape="rect" coords="281,153,357,175">
+    </map>
+</div>
+<div>
+    <input id="searchinput" type="text" placeholder="Mp3 Search"  />
+    <button id="playsong">Play</button>
+    <button id="queuesong">Queue</button>
+</div>
+<select id="playlist"></select>
+<div class="chartcontainer">
+    <canvas id="chart" oncontextmenu="return false;"></canvas>
+</div>
+<a href="http://crcw.mb.ca:8000/winamp.m3u">Listen</a><span id="connections"></span>

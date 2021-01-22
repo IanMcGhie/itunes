@@ -1,0 +1,215 @@
+@font-face {
+    font-family: "Hack-Regular";
+    src: url("/fonts/Hack-Regular.ttf");
+    font-family: "DS-Regular";
+    src: url("/fonts/digital.ttf");   
+}
+
+body {
+    margin-left: 0px;
+    font-family: "Hack";
+    font-size: 20px;
+    text-align: left;
+    background: url(/images/space.png);
+}
+
+a {
+    color: #0d0;
+}
+
+option {
+    background: #000;
+ 
+}
+
+table {
+    text-align: center;
+}
+
+#chart {
+    padding-top: 20px;
+    padding-bottom: 20px;
+    display: none;
+}
+
+#charttooltip {
+    margin-top: 150px;
+    padding: 20px;
+    position: fixed;
+    font-family: inherit;
+    font-size: 20px;
+    top: 50%;
+    border: 1px solid #0f0;
+    border-radius: 20px;
+    background: #000;
+}
+
+#songtitle {
+    margin-top: 25px;
+    margin-bottom: 25px;
+    font-family: inherit;
+    width: 470px;
+    font-size: 24px;
+}
+/*
+#winampdiv {
+display: inline;
+    padding: 0px;
+}
+*/
+
+#ispaused {
+    margin-left: -425px;
+    margin-top: 50px;
+    position: absolute;
+    z-index: 1;
+}
+
+#clock {
+    margin-top: 40px;
+    margin-left: -410px;
+    font-family: "DS-Regular";
+    font-size: 36px;
+    position: absolute;
+    display: inline-block;
+    z-index: 1;
+}
+
+#volume {
+    margin-top: 108px;
+    margin-left: -280px;
+    display: inline-block;
+    position: absolute;
+    background-color: #0f0;
+    width: 100px;
+    height: 3px;
+    z-index: 1;
+}
+/*
+#progressbar {
+    background-color: transparent;
+    border: none;
+    margin-top: 132px;
+    margin-left: -440px;
+    display: inline-block;
+    position: absolute;
+    background-color: #000;
+    width: 390px;
+    height: 3px;
+    z-index: 1;
+}
+*/
+
+#progressbarhandle {
+    padding-top: 0px;
+    padding-bottom: 0px;
+    padding-left: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    margin-left: 0px;
+    display: block;
+    
+}
+
+#winampspan {
+    margin: 0px;
+    padding: 0px;
+    
+   /* width: 470px;
+    height: 200px;*/
+    z-index: -1;
+}
+
+#progressbardiv {
+    background-color: #000;
+    
+    padding-top: 0px;
+    padding-left: 0px;
+    padding-bottom: 0px;
+
+    margin-top: 122px;
+    margin-bottom: 0px;
+    margin-left: -445px;
+  position: absolute;
+  display: inline-block;
+    width: 420px;
+    height: 17px;
+    z-index: 1;
+}
+
+#shuffleenabled {
+    margin-top: 158px;
+    margin-left: -188px;
+    position: absolute;
+    z-index: 1;
+}
+
+.ui-slider .ui-slider-handle {
+    background: url(/images/volumeknob.png) no-repeat;
+    border: none;
+    background-size: cover;
+    height: 16px;
+    width: 20px;
+    right: 0px;
+    top: -7px;
+}
+
+.group {
+    text-align: center;
+}
+
+#autocompleteform {
+    display: inline;
+}
+
+#autocompleterow {
+    text-align: center;
+}
+
+#searchinput {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 5px; 
+    font-family: inherit;
+    font-weight: inherit;
+    text-align: left;
+    background-color: #000;
+    color: inherit;
+    border: 1px solid #888;
+}
+
+#playsong,
+#queuesong {
+    padding: 5px;
+    font-family: inherit;
+    font-weight: inherit;
+    border: 1px solid #888;
+    background-color: #000;
+    color: inherit;
+}
+
+#playlist {
+    font-family: inherit;
+    font-weight: inherit;
+    color: inherit;
+}
+
+[id*="resultrow_"]  {
+    text-align: left;
+    cursor: pointer;
+    font-size: 10px;
+}
+
+#setvolume\/mute,#popupdialog { 
+    margin: auto;
+    padding: 20px;
+    top: 35%;
+    left: 11%;
+    position: fixed;
+    color: #fd1;
+    border: 1px solid #fd1;
+    border-radius: 20px;
+    background: #000;
+    display: none;
+    z-index: 3;
+}
