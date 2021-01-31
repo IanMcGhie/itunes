@@ -1,6 +1,5 @@
 "use strict";
-// bb doesnt like the let, includes, const keyword, async functions, 
-// promises... ()=> syntax or string literals
+// bb doesnt like the let, includes, const keyword, async functions, promises... ()=> syntax
 // ooo...neat https://en.wikipedia.org/wiki/Trie
 var DEBUG      = true;
 var itsTheBB   = true;  // default mode
@@ -22,12 +21,12 @@ Number.prototype.toMMSS = function() {
     var seconds = Math.abs(parseInt(this % 60));
 
     if (minutes < 10) 
-        minutes = "0" + minutes;
+        minutes = `0${ minutes }`;
     
     if (seconds < 10)
-        seconds = "0" + seconds;
+        seconds = `0${ seconds }`;
 
-    return minutes + ":" + seconds;
+    return `${ minutes }:${ seconds }`;
 } // Integer.prototype.toMMSS = function() {
 
 $(document).ready(function() {
@@ -41,17 +40,13 @@ $(document).ready(function() {
 
     if (itsTheBB)
         sendCommand("getbbplaylist");
-
- 
-//    document.getElementById("icecastlink").setAttribute("href", "http://crcw.mb.ca:8000/winamp.m3u");
-
-
+    
     setupKBEvents();
     setupMouseEvents();
     setupVolumeControl();
     setupClock();
     setupTitleTicker();
-
+ 
     window.onresize = drawChart;
     document.body.style.color = "#0d0"; // set chart bar default color 
 }); // $(document).ready(function() {
@@ -61,7 +56,7 @@ function setupClock() {
 
     setInterval(function() {
         if (state.duration - state.progress > -1) 
-            $("#clock").text("-" + (state.duration - state.progress).toMMSS());
+            $("#clock").text(`-${ (state.duration - state.progress).toMMSS() }`);
                 else
                     $("#clock").text('-00:00');
 
@@ -93,7 +88,7 @@ function setupTitleTicker() {
 } // function setupTitleTicker() {
 
 function sendCommand(_command) {
-    log("sendCommand(" + _command + ")");
+    log(`sendCommand(${ _command })`);
 
     var postRefresh = true;
 
@@ -107,15 +102,15 @@ function sendCommand(_command) {
                 state.shuffle = !state.shuffle;
                 postRefresh = false;
                 } else if (_command.split('/')[0] == "queuesong") {
-                    state.popupDialog = playList[_command.split('/')[1]] + " queued";   
+                    state.popupDialog = `${ playList[_command.split('/')[1]] } queued`;   
                     postRefresh = false;
                 }
 
     if (!postRefresh)
-        updateUI("sendCommand(" + _command + ")");
+        updateUI(`sendCommand(${ _command })`);
 
-    $.getJSON(_command, function(_newState) {
-        log("$.getJSON(" + _command + ")");
+    $.getJSON(_command, function (_newState) {
+        log("HTTP state retrieved thusly");
 
         state = _newState;
         console.dir(state);
@@ -129,13 +124,13 @@ function sendCommand(_command) {
         
         if (state.hasOwnProperty('playList')) {
             setupPlaylist();
-            drawChart("$.getJSON(" + _command + ")");
+            drawChart(`$.getJSON(${ _command })`);
         }
 
         if (postRefresh || _command == "getstate")
-            $.getJSON(_command, function(_bbState) {
+            $.getJSON(_command, function (_bbState) {
                 state = _bbState;
-                updateUI("itsTheBB -> " + itsTheBB);
+                updateUI(`itsTheBB -> ${ itsTheBB }`);
             });
   }); // $.getJSON(_command, function (_newState) {
 }
@@ -157,7 +152,7 @@ function setupVolumeControl() {
         var g = toHex(153 - _ui.value);
         var b = toHex(_ui.value * 0.1 + 28);
 
-        log("volume cb sending volume -> " + _ui.value + " color -> #" + r + g + b);
+        log(`volume cb sending volume -> ${ _ui.value } color -> #${ r + g + b }`);
 
         $("#volume").css("background-color","#" + r + g + b);
 
@@ -167,14 +162,14 @@ function setupVolumeControl() {
             return;
         }
 
-        updateUI("setvolume/" + _ui.value);
-        $.get("setvolume/" + _ui.value);
+        updateUI(`setvolume/${ _ui.value }`);
+        $.get(`setvolume/${ _ui.value }`);
     }); // $("#volume").on("slidechange", function(_event, _ui) {
 } // function setupVolumeControl() {
 
 function toHex(_n) {
     var h = parseInt(_n).toString(16);
-    return h.length < 2 ? "0" + h: h;;
+    return h.length < 2 ? `0${ h }`: h;;
 }
 
 function setupMouseEvents() {
@@ -194,18 +189,18 @@ function setupMouseEvents() {
     });
 
     $("#playlist").dblclick(function() {
-        sendCommand("playsong/" + getSearchInputSongIndex());
+        sendCommand(`playsong/${ getSearchInputSongIndex() }`);
     });
 
     $("#playsong").click(function() {
-        sendCommand("playsong/" + getSearchInputSongIndex());
+        sendCommand(`playsong/${ getSearchInputSongIndex() }`);
     });
 
     $("#queuesong").click(function() {
         queueSong(getSearchInputSongIndex());
     });
 
-    $("#shuffle, #shuffleenabled, #prev, #next, #pause, #setvolume\\/mute").click(function() {
+    $("#shuffle, #shuffleenabled,#pause,#prev, #next, #pause, #setvolume\\/mute").click(function() {
         sendCommand((this).id);
     });
 
@@ -234,7 +229,7 @@ function setupKBEvents() {
     var index;
 
     $("body").keyup(function(_event) {
-        log("body keyup -> " + _event.which);
+        log(`body keyup -> ${ _event.which }`);
         
         switch (_event.which) {
             case 90 || 122: // Z z
@@ -280,11 +275,11 @@ function setupKBEvents() {
         $("#playlist").css("border", "1px solid #0d0");
 
         $("#playlist").keyup(function(_event) {
-            log("key up -> " + _event.which);
+            log(`key up -> ${ _event.which }`);
 
             switch (_event.which) {
                 case 13:
-                    $.get("playsong/" + getSearchInputSongIndex());
+                    $.get(`playsong/${ getSearchInputSongIndex() }`);
                 break;
                 
                 case 51: // 3
@@ -305,26 +300,24 @@ function setupKBEvents() {
 } // function bodyKBEvents(_event) {
 
 function queueSong(_index) {
-    log("queueSong(" + _index + ")");
-
     state.queueSong = _index;
-    updateUI("queueSong(" + _index + ")");
-    sendCommand("queuesong/" + _index);
+    updateUI(`queuesong/${ _index }`);
+    sendCommand(`queuesong/${ _index }`);
 }
 
 function updateUI(_logMsg) {
-    log("updateUI(" + _logMsg + ")");
+    log(`updateUI(${ _logMsg })`);
 
     if (songLog.length > 0) {
-        $("#songtitle").text(playList[songLog[songLog.length - 1]] + " (" + state.duration.toMMSS() + ")");
+        $("#songtitle").text(`${ playList[songLog[songLog.length - 1]] } (${ state.duration.toMMSS() })`);
         $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
         $("#searchinput").css("width",parseInt($("#playlist").css("width")) - 150);
-        $("#playlist>option:eq(" + songLog[songLog.length - 1] + ")").prop("selected", true);
+        $(`#playlist>option:eq(${ songLog[songLog.length - 1] })`).prop("selected", true);           
     }
 
     if (state.hasOwnProperty('queueSong')) {
         $("#popupdialog").css("display", "block");
-        state.popupDialog = playList[state.queueSong] + " queued";
+        state.popupDialog = `${ playList[state.queueSong] } queued`;
         $("#popupdialog").text(state.popupDialog);
         $("#popupdialog").delay(5000).hide(0);  
 
@@ -332,19 +325,18 @@ function updateUI(_logMsg) {
     } 
 
     // this will cause slidechange jquery cb to fire
-    log("state.hasOwnProperty('volume') -> " + state.hasOwnProperty('volume'));
     state.hasOwnProperty('volume') ? $("#volume").slider("value", state.volume) : null;
  
     $("#setvolume\\/mute").css("display", state.mute ? "inline-block" : "none");
     $("#shuffleenabled").css("visibility",state.shuffle ? "visible" : "hidden");
     $("#ispaused").attr("src",state.pause ? "/images/paused.png" : "/images/playing.png");
-    $("#connections").text(" (" + state.listeners_total + "/" + state.listeners_current + "/" + songLog.length + ")");
+    $("#connections").text(` ${ state.total_listeners + "/" + state.current_listeners + "/" + songLog.length }`);
 } // function updateUI(_logMsg) {
 
 function setupWebSocket() {
-    log("setupWebSocket()");
-
     var client = new WebSocket("ws://" + serverUrl, "winamp");
+
+    log("setupWebSocket()");
 
     $("body").css("text-align","center");
     $("body").css("font-weight","bold");
@@ -356,12 +348,14 @@ function setupWebSocket() {
     $("#songtitle").css("width","100%");
 
     client.onmessage = function(_response) {
-        log("websocket received state thusly");
-
         state = JSON.parse(_response.data).state;
+
+        log("websocket received state thusly");
         
         if (DEBUG)
             console.dir(state);
+
+    //    $("#pagetitle").text("");
 
         if (state.hasOwnProperty('playList'))
             setupPlaylist();
@@ -370,7 +364,7 @@ function setupWebSocket() {
             songLog = state.songLog;
             $("#searchinput").val(playList[songLog[songLog.length - 1]]); 
             $("#pagetitle").text("");
-            log("client.onmessage cb state.songLog.length -> " + state.songLog.length);
+            log(`client.onmessage cb state.songLog.length -> ${ state.songLog.length }`);
             drawChart("client.onmessage cb");
         }
 
@@ -392,17 +386,15 @@ function setupPlaylist() {
 
     $("#playlist").attr("size", playList.length < 20 ? playList.length : 20);
 
-    var select = document.getElementById("playlist");
-    if (false)
-        document.getElementById("icecastlink").setAttribute("href", "http://crcw.mb.ca:8000/winamp.m3u");
-
     for (var i = 0; i < playList.length; i++) {
+        var select = document.getElementById("playlist");
         var option = document.createElement("option");
 
-//        if (document.getElementById("option"))
-//            select.removeChild("song_" + i); // whats this do?
+        if (document.getElementById("option"))
+            select.removeChild(`song_${ i }`); // whats this do?
+//            select.removeChild("id" + "song_" + i); // whats this do?
                 
-        option.setAttribute("id", "song_" + i);
+        option.setAttribute("id", `song_${ i }`);
         option.text = playList[i];
         select.add(option);
     } 
@@ -424,7 +416,7 @@ function setupSearch() {
         
         $("#searchinput").keyup(function(_event) {      
             if (_event.which == 13) 
-                sendCommand("playsong/" + getSearchInputSongIndex());
+                sendCommand(`playsong/${ getSearchInputSongIndex() }`);
 
             if (_event.which == 27)
                 $("#searchinput").blur();
@@ -467,7 +459,7 @@ function setupSearch() {
             if (charsAllowed(_value)) {
                 var regex = new RegExp(_value, 'gi');
                 var inner = _item.label.replace(regex, function(_match) {
-                    return "<strong>" + _match + "</strong>";
+                    return `<strong>${ _match }</strong>`;
                 });
                 itemElement.innerHTML = inner;
             } else 
@@ -489,7 +481,7 @@ function drawChart(_logMsg) {
     if (itsTheBB) 
         return;
 
-    log("drawChart(" + _logMsg + ")");
+    log(`drawChart(${ _logMsg })`);
 
     var barColors    = [];
     var chartData    = [];
@@ -524,33 +516,33 @@ function drawChart(_logMsg) {
         $("#chart").contextmenu(function() { // right click
             $("#charttooltip").remove();
             showPlayed = !showPlayed;
-            drawChart("right click");
+            drawChart("contextmenu");
         });
        
         $("#chart").click(function() {
             if (chartPopupIndex != -1)
-                $.get("playsong/" + chartPopupIndex);
+                $.get(`playsong/${ chartPopupIndex }`);
         });
 
         // highlight currently playing song
         if (chartPopupIndex == songLog[songLog.length - 1]) {
             ttElement.style.color  = "#fd1";
             ttElement.style.border = "1px solid #fd1";
-            innerHTML += "<thead><tr><th>" + playList[chartPopupIndex] + "</th></tr></thead>";
+            innerHTML += `<thead><tr><th>${ playList[chartPopupIndex] }</th></tr></thead>`;
             } else {
                     ttElement.style.color = "#0d0";
                     ttElement.style.border = "1px solid #0d0";
-                    innerHTML += "<thead><tr><th>" + playList[chartPopupIndex] + "</th></tr></thead>";
+                    innerHTML += `<thead><tr><th>${ playList[chartPopupIndex] }</th></tr></thead>`;
                     }
 
-        innerHTML += "<tbody><tr><td>&nbsp<td></tr><tr><td>Right click for songs " + (showPlayed ? "not" : "") + " played.</td></tr></tbody></table>";
+        innerHTML += `<tbody><tr><td>&nbsp<td></tr><tr><td>Right click for songs ${ (showPlayed ? "not" : "") } played.</td></tr></tbody></table>`;
 
         ttElement.querySelector('table').innerHTML = innerHTML;
         ttElement.style.opacity = 1;
-        ttElement.style.left    = (_ttModel.caretX / 1.4) + "px";// window.width / 2;// (_ttModel.caretX) + 'px';
+        ttElement.style.left    = `${ _ttModel.caretX / 1.4 }px`;// window.width / 2;// (_ttModel.caretX) + 'px';
     };  // var customTooltips = function(_ttModel) {
 
-    $("#chartcontainer").css("display", "inline-block");
+    $("#chartcontainer").css("display","inline-block");
     
     currentSongIndex = songLog[songLog.length - 1];
     chartData.length = playList.length;
@@ -632,5 +624,6 @@ function getSearchInputSongIndex() {
 
 function log(_msg) {
 	if (DEBUG)
-		console.log(Date().split('GMT')[0] + _msg);
+		console.log(Date().split('GMT')[0] + `${ _msg }`);
 }
+

@@ -9,33 +9,35 @@ const DEBUGTOLOGFILE= false;
 const LOGFILE		= 'thelogfile';
 const LOCALE 	 	= process.env.LOCALE || 'POSIX';
 const PLAYLISTFILE 	= "/home/ian/monday.pls";
-const WEBSOCKETPORT = 6502;
+const ICECASTCONFIGFILE = '/usr/local/etc/icecast.xml';
+const DARKICECONFIGFILE = '/home/ian/.darksnow/darkice.cfg';
+const WSPORT 		= 6502;
 
-const { execFile, spawn }	= require('child_process');
-const Express 	   	= require('express');
-const fs 			= require("fs");
-const Http 			= require('http');
-const WSServer 		= require('websocket').server;
-const NodeID3 		= require('node-id3')
-const app 			= Express();
+const { execFile, spawn } = require('child_process');
+const Express 	= require('express');
+const fs 		= require("fs");
+const Http 		= require('http');
+const WSServer 	= require('websocket').server;
+const NodeID3 	= require('node-id3')
+const app 		= Express();
 
-let createError 	= require('http-errors');
-let express 		= require('express');
-let path 			= require('path');
+let createError = require('http-errors');
+let express 	= require('express');
+let path 		= require('path');
 
-let songLog 		= [];
-let playList 		= [];
-let playListPath	= [];
-let clients 		= [];
-let state			= {
+let songLog 	= [];
+let playList 	= [];
+let playListPath= [];
+let clients 	= [];
+let state		= {
     duration: 0,
     mute: false,
     pause: false,
     progress: 0,
     shuffle: true,
     volume: 40,
-    total_listeners: 0,
-    current_listeners: 0
+    listeners_total: 0,
+    listeners_current: 0
 };
 
 Number.prototype.toMMSS = function() {
@@ -51,15 +53,22 @@ Number.prototype.toMMSS = function() {
     return minutes + ":" + seconds;
 } // Integer.prototype.toMMSS = function() {
 
-setVolume(state.volume, 'LOCAL');
+// turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
+xmmsCmd('LOCAL');
+/*
+execFile("icecast", ['-b', '-c', ICECASTCONFIGFILE], (_err, _stdout, _stderr) => {
+	log("icecast started stdout ->\n" + _stdout)
+
+	execFile("darkice", ['-v 0', '-c', DARKICECONFIGFILE], (_err, _stdout, _stderr) => {
+		log("darkice started stdout -> " + _stdout)
+		connectXmmsToDarkice(remoteAddress);
+	});
+});
+*/
 getPlayList('LOCAL');
+setVolume('LOCAL', state.volume);
 setupExpress();
 setupWebsocket();
-
-xmmsCmd('LOCAL', '-p'); // starts playing...then...crashes...20 secs
-
-// turn shuffle on & start playing ...xmms will send /newsong/# http request & setup the initial state
-//execFile('xmms', ['-Son','-pf']);
 
 fs.watchFile(PLAYLISTFILE, () => { 
 	//try {
@@ -79,9 +88,9 @@ fs.watchFile(PLAYLISTFILE, () => {
 }); // fs.watchFile(PLAYLISTFILE, async() => { 
 
 setTimeout(() => {
-	execFile('lynx', ['-auth=admin:adminjam','--dump','http://winamp:8000/admin/stats.xsl'], (_err, _stdio, _stderr) => {
-		state.total_listeners = parseInt(_stdio.split('listener_connections')[1]);
-		state.current_listeners = parseInt(_stdio.split('listeners')[1])
+	execFile('lynx', ['-auth=admin:adminjam','--dump','http://winamp:8000/admin/stats.xsl'], (_err, _stdout, _stderr) => {
+		state.listeners_total = parseInt(_stdout.split('listener_connections')[1]);
+		state.listeners_current = parseInt(_stdout.split('listeners')[1])
 	});
 }, 60000);    
 
@@ -99,12 +108,17 @@ function setupExpress() {
 //	app.use(favicon(path.join(__dirname, 'public/images', 'favicon.ico')))
 
 	app.get('*', (_request, _response, _next) => {
-		log(`${ _request.socket.remoteAddress } incoming request -> ${ _request.url }`);
+		log(`${ _request.socket.remoteAddress } incoming request   -> ${ _request.url }`);
 		_next();
 	});
 
 	app.get('/', (_request, _response, _next) => {
-		_response.render('index', state);
+		var localRequest = "http://winamp:8000/winamp.m3u";
+
+		if (!_request.socket.remoteAddress.includes('192.168.50.'))
+			localRequest = "http://crcw.mb.ca:8000/winamp.m3u";
+		
+		_response.render('index', { localRequest: localRequest });
 	});
 
 	app.get('/:arg1/:arg2?', (_request, _response) => {
@@ -114,9 +128,11 @@ function setupExpress() {
 
 		log(`${ remoteAddress } processing request -> ${ _request.url } arg1 -> ${ arg1 } arg2 -> ${ arg2 }`);
 
-		execFile('qxmms', ['-lnS'], (_err, _stdio, _stderr) => {
-			state.duration = parseInt(_stdio.split(" ")[0]);
-			state.progress = parseInt(_stdio.split(" ")[1]);
+		execFile('qxmms', ['-lnS'], (_err, _stdout, _stderr) => {
+			log(`${ remoteAddress } qxmms err -> ${ _err } stdout -> ${ _stdout } stderr -> ${ _stderr }`);
+
+			state.duration = parseInt(_stdout.split(" ")[0]);
+			state.progress = parseInt(_stdout.split(" ")[1]);
 
 			switch (arg1) {
 				case "prev":
@@ -140,7 +156,7 @@ function setupExpress() {
 				break;
 
 				case "getstate":
-					state.songLog = songLog;
+					state.songLog = songLog;	
 					console.dir(state);
 					_response.send(state);
 					delete state.songLog;
@@ -155,64 +171,65 @@ function setupExpress() {
 
 					log(playList.length + " songs in playlist.");
 					_response.send(state);
+					log("removing playList and songLog from state");
 					delete state.playList;
 					delete state.songLog;
 				break;
 
 				case "setvolume":
 					if (!remoteAddress.includes('192.168.50.1'))
-						setVolume(arg2 ,remoteAddress);
+						setVolume(remoteAddress, arg2);
 
-					sendState(remoteAddress, `setvolume(${ arg2 })`); // send state to all except remoteAddress
+					sendState(remoteAddress, `setvolume(${ state.volume })`); // send state to all except remoteAddress
 				break;
 
 				case "queuesong": 	// * really hurt *  ...still hz
-					log("playList song -> " + playList[arg2]);
+					log("queuesong -> " + playList[arg2]);
 					log("song path -> " + playListPath[arg2]);
-					//execFile('xmms', ['-Q', playListPath[arg2]]);
-					xmmsCmd(_remoteAddress, '-Q ' + playListPath[arg2]);
+					execFile('xmms', ['-Q', playListPath[parseInt(arg2)]]);
+					//xmmsCmd(remoteAddress, ['-Q', playListPath[arg2]]);
 					state.queueSong = parseInt(arg2);
-					sendState(remoteAddress, arg1 + '/' + arg2); // send state to all except remoteAddress
+					sendState(remoteAddress, arg1 + '/' + (arg2 + 1)); // send state to all except remoteAddress
 				break;
 
 				case "playsong":
-					// execFile('qxmms',['jump', parseInt(arg2) + 1]);
-					xmmsCmd(_remoteAddress, ['jump', parseInt(arg2) + 1]);
+					 //execFile('qxmms',['jump', (arg2 + 1)]);
+					xmmsCmd(remoteAddress, ['jump', parseInt(arg2) + 1]);
 				break;
 
 				case "newsong":
 					arg2--;
 
 		            if (arg2 > playList.length - 1)  { // queued mp3 at end of playlist
-		            		log("This is a queued song");
-			                execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-			                    for (let i = 0; i < playList.length; i++) {
-			                        if (playListPath[i] == _stdio.split('\n')[0]) { // remove cr from _stdio
-			                            songLog.push(i);
-			                            log("queued song path -> " + playListPath[i]);
-			                            execFile('qxmms',['jump', parseInt(i) + 1]);
-			                        }
-			                    }
-			                }); // execFile('qxmms',['-f'], (_err,_stdio,_stderr) => {
-			            } else {
-								songLog.push(arg2);
-								state.songLog = songLog;
-								sendState('BROADCAST', arg1 + '/' + arg2);
-								
-								if (clients.length > 0)
-									connectXmmsToDarkice(remoteAddress);
+						log("This is a queued song");
+
+						execFile('qxmms','-f', (_err,_stdout,_stderr) => {
+							for (let i = 0; i < playList.length; i++) {
+								if (playListPath[i] == _stout.split('\n')[0]) { // remove cr from _stdout
+								songLog.push(i);
+								log("queued song path -> " + playListPath[i]);
+								execFile('qxmms',['jump', parseInt(i) + 1]);
+								}
 							}
+						}); // execFile('qxmms',['-f'], (_err,_stdout,_stderr) => {
+					} else {
+							songLog.push(arg2);
+							state.songLog = songLog;
+							sendState('BROADCAST', arg1 + '/' + arg2);
+
+//							if (clients.length > 0)
+//								connectXmmsToDarkice(remoteAddress);
+						}
 				break;
 
 				case "seek":
 					let seekTo = parseInt(state.duration * (arg2 / 100));
 
-					log(`seekTo -> ${ seekTo }`);
-					log(`seekTo.toMMSS -> ${ seekTo.toMMSS() }`);
+					log(`${ remoteAddress } seekTo -> ${ seekTo } seekTo.toMMSS -> ${ seekTo.toMMSS() }`);
 
 					execFile('qxmms', ['seek', seekTo.toMMSS()], () => {
 						state.progress = seekTo;
-						sendState("BROADCAST", arg1 + '/' + arg2)
+						sendState("BROADCAST", 'seek/' + arg2)
 					});
 				break;
 
@@ -222,15 +239,15 @@ function setupExpress() {
 
 		log(`${ remoteAddress } _response.end()`);
 		_response.end();
-		}); // execFile('qxmms', ['-lnS'], (_err,_stdio,_stderr) => {
+		}); // execFile('qxmms', ['-lnS'], (_err,_stdout,_stderr) => {
 	}); // App.get('/:arg1/:arg2?', (_request, _response) => {
 }
 
 function connectXmmsToDarkice(_remoteAddress) {
     log(`${ _remoteAddress } connectXmmsToDarkice()`);
     
-    execFile('jack_lsp',(_err, _stdio, _stderr) => {
-        const lines            = _stdio.split('\n');
+    execFile('jack_lsp',(_err, _stdout, _stderr) => {
+        const lines            = _stdout.split('\n');
         const xmmsJackPorts    = [];
         const darkiceJackPorts = [];
 
@@ -244,32 +261,37 @@ function connectXmmsToDarkice(_remoteAddress) {
 
         execFile('jack_connect', [ darkiceJackPorts[0], xmmsJackPorts[0] ]);
         execFile('jack_connect', [ darkiceJackPorts[1], xmmsJackPorts[1] ]);
-    }); // execFile('jack_lsp',(_err,_stdio,_stderr) => {
+    }); // execFile('jack_lsp',(_err,_stdout,_stderr) => {
 } // function connectXmmsToDarkice() {
 
 function xmmsCmd(_remoteAddress, _cmd) {
-	const ls = spawn("xmms", [_cmd]);
 	const remoteAddress = _remoteAddress;
+	let xmms;
 
-	ls.stdout.on("data", _data => {
-			log(`${ remoteAddress } xmmsCmd(${ _cmd }) stdout -> ${ _data }`);
-		});
+	if (_cmd == undefined)
+		_cmd = '-p';
 
-		ls.stderr.on("data", _data => {
-			// ** print jack msgs **
-			//console.log(`stderr: ${ _data }`);
-		});	
+	xmms = spawn("xmms", [_cmd]);
 
-		ls.on('error', _error => {
-			log(`error: ${ _error.message }`);
-		});
+	xmms.stdout.on("data", _data => {
+		log(`${ remoteAddress } xmmsCmd(${ _cmd }) stdout -> ${ _data.slice(0, -1) }`);
+	});
 
-		ls.on("close", _code => {
-			log(`${ remoteAddress } xmmsCmd(${ _cmd }) stdout -> ${ _code }`);
-		});
+	xmms.stderr.on("data", _data => {
+	// ** print jack msgs **
+	//console.log(`stderr: ${ _data }`);
+	});	
+
+	xmms.on('error', _error => {
+		log(`${ remoteAddress } xmmsCmd(${ _cmd }) stderr -> ${ _error.message.slice(0, -1) }`);
+	});
+
+	xmms.on("close", _code => {
+		log(`${ remoteAddress } xmmsCmd(${ _cmd }) close -> ${ _code }`);
+	});
 }
 
-function setVolume(_params, _remoteAddress) {
+function setVolume(_remoteAddress, _params) {
     if (_params == 'volup')
         state.volume++;
             else if (_params == 'voldown')
@@ -292,10 +314,10 @@ function setupWebsocket() {
         log(`${ _request.socket.remoteAddress } recieved websocket request -> ${ _request.url }`);
         _response.writeHead(404);
         _response.end();
-    }).listen(WEBSOCKETPORT);
+    }).listen(WSPORT);
 
     const wsServer = new WSServer({
-        url: "ws://localhost:" + WEBSOCKETPORT,
+        url: "ws://localhost:" + WSPORT,
         httpServer: wsHttp
     }); 
 
@@ -305,9 +327,9 @@ function setupWebsocket() {
 		clients.push(_connection);
 		getPlayList(_connection.socket.remoteAddress);
 
-		execFile('qxmms', ['-lnS'], (_err, _stdio, _stderr) => {
-            state.duration = parseInt(_stdio.split(" ")[0]);
-            state.progress = parseInt(_stdio.split(" ")[1]);
+		execFile('qxmms', ['-lnS'], (_err, _stdout, _stderr) => {
+            state.duration = parseInt(_stdout.split(" ")[0]);
+            state.progress = parseInt(_stdout.split(" ")[1]);
 			state.playList = playList;
 			state.songLog  = songLog; 
 
@@ -343,7 +365,6 @@ File2=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/02 - You Ain't Got A Hold On M
 File3=///home/ian/mp3/a/ACDC/AC DC - 74 Jailbreak/03 - Show Bisiness.mp3
 */
 function getPlayList(_remoteAddress) {
-
 	log(`${ _remoteAddress } getPlayList() -> ${ PLAYLISTFILE }`);
 
 	fs.readFile(PLAYLISTFILE, function(_err, _data) {
@@ -377,11 +398,11 @@ function sendState(_sendTo, _logMsg) {
     console.dir(state);
 
     for (let i = 0; i < clients.length; i++) 
-        if ((_sendTo == 'BROADCAST') || (clients[i].remoteAddress != _sendTo)) {
-            log(`sendState(${ _sendTo }, ${ _logMsg  }) sending state to -> ${ clients[i].remoteAddress }`);
+        if ((_sendTo == 'BROADCAST') || (clients[i].remoteAddress != _sendTo)) {        															
+            log(`${ _sendTo } sendState(${ _sendTo }, ${ _logMsg })     sending state to -> ${ clients[i].remoteAddress }`);
             clients[i].sendUTF(JSON.stringify({ state: state }));
         } else 
-            log(`${ _sendTo } sendState(${ _sendTo }, ${ _logMsg }) NOT sending state`);
+            log(`${ _sendTo } sendState(${ _sendTo }, ${ _logMsg }) NOT sending state to -> ${ clients[i].remoteAddress }`);
 
         if (state.hasOwnProperty("queueSong")) 
         	delete state.queueSong;
