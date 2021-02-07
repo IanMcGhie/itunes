@@ -33,15 +33,19 @@ table {
 }
 
 #charttooltip {
-    margin-top: 150px;
+    
+    top: 50%;
     padding: 20px;
     position: fixed;
     font-family: inherit;
     font-size: 20px;
-    top: 50%;
     border: 1px solid #0f0;
     border-radius: 20px;
     background: #000;
+}
+
+#icecastlink {
+    display: block;
 }
 
 #songtitle {
@@ -169,9 +173,10 @@ display: inline;
 }
 
 #searchinput {
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 5px; 
+    margin-top: 20px;
+    margin-bottom: 20px;
+    padding-top: 5px; 
+    padding-bottom: 5px;
     font-family: inherit;
     font-weight: inherit;
     text-align: left;
@@ -207,7 +212,7 @@ display: inline;
     padding: 20px;
     top: 35%;
     left: 11%;
-    position: fixed;
+    position: absolute;
     color: #fd1;
     border: 1px solid #fd1;
     border-radius: 20px;
