@@ -33,8 +33,7 @@ table {
 }
 
 #charttooltip {
-    
-    top: 50%;
+    top: 60%;
     padding: 20px;
     position: fixed;
     font-family: inherit;
